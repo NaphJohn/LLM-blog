@@ -16,6 +16,14 @@ const mm = [
   { href: base + 'en/blog/mm4-vla-world-model', title: '(4) From VLA to World Models — RT-2 → π0.7 → HiF-VLA', date: '2026-07-31' },
   { href: base + 'en/blog/mm5-efficiency-frontier', title: '(5) Efficient Systems & Frontier Inference — Attention / Inference Opt / On-Device / RL', date: '2026-07-31' },
 ];
+const eq = [
+  { href: base + 'en/blog/eq1-self-awareness', title: '(1) Self-Awareness & Inner Frame — Fix Yourself Before the Relationship', date: '2026-08-01' },
+  { href: base + 'en/blog/eq2-attraction', title: '(2) Attraction & First Contact — Attraction Is a Learnable Behavior, Not a Gift', date: '2026-08-01' },
+  { href: base + 'en/blog/eq3-gender-differences', title: '(3) Gender Communication Differences — Conflict Is Not Right vs Wrong, but Different Rules', date: '2026-08-01' },
+  { href: base + 'en/blog/eq4-nvc-crucial', title: '(4) Nonviolent Communication & Crucial Conversations — Turn Conflict into Consensus', date: '2026-08-01' },
+  { href: base + 'en/blog/eq5-win-favor', title: '(5) Winning Favor & Deep Connection — Make the Other "Become Better With You"', date: '2026-08-01' },
+  { href: base + 'en/blog/eq6-influence-relationship', title: '(6) Influence & Long-Term Relationship Management — Let Sincerity Be Better Received', date: '2026-08-01' },
+];
 ---
 
 <!doctype html>
@@ -30,7 +38,7 @@ const mm = [
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">Notes on LLM inference, training and systems optimization. Chinese-first; key series (Speculative Decoding Notes, Multimodal Decoding Notes) are bilingual.</p>
+      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; key series (Speculative Decoding Notes, Multimodal Decoding Notes, Emotional Intelligence Decoding Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 5 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head. Each post has a Chinese counterpart.</p>
@@ -47,6 +55,17 @@ const mm = [
       <p class="series-tag">Series · 5 episodes, in order: foundations & alignment → VLM evolution → generative models (diffusion / GAN) → VLA & world models → efficient systems & frontier inference. A progressive arc through the common multimodal models, structures, principles, and optimization techniques, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {mm.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2>Emotional Intelligence Decoding Notes</h2>
+      <p class="series-tag">Series · 6 episodes, in order: self-awareness & inner frame → attraction & first contact → gender communication differences → nonviolent communication & crucial conversations → winning favor & deep connection → influence & long-term management. A progressive arc distilling the EQ knowledge from daily emails into one line: stabilize self, be sincerely seen, understand differences, resolve conflict, connect deeply, manage long-term. Each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {eq.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>

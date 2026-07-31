@@ -16,6 +16,14 @@ const mm = [
   { href: base + 'blog/mm4-vla-world-model', title: '（四）从 VLA 到世界模型：RT-2 → π0.7 → HiF-VLA', date: '2026-07-31' },
   { href: base + 'blog/mm5-efficiency-frontier', title: '（五）高效系统与前沿推理：注意力 / 推理优化 / 端侧 / RL', date: '2026-07-31' },
 ];
+const eq = [
+  { href: base + 'blog/eq1-self-awareness', title: '（一）自我觉察与内在框架：先搞定自己，再谈关系', date: '2026-08-01' },
+  { href: base + 'blog/eq2-attraction', title: '（二）吸引力与初识：吸引力不是天赋，是可习得的行为模式', date: '2026-08-01' },
+  { href: base + 'blog/eq3-gender-differences', title: '（三）两性沟通差异：冲突不是谁对谁错，是规则不同', date: '2026-08-01' },
+  { href: base + 'blog/eq4-nvc-crucial', title: '（四）非暴力沟通与关键对话：把冲突变成共识', date: '2026-08-01' },
+  { href: base + 'blog/eq5-win-favor', title: '（五）赢得好感与深度连接：让人"跟你在一起变得更好"', date: '2026-08-01' },
+  { href: base + 'blog/eq6-influence-relationship', title: '（六）影响力与长期关系经营：用真诚被更好地接收', date: '2026-08-01' },
+];
 ---
 
 <!doctype html>
@@ -30,7 +38,7 @@ const mm = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记、多模态解码手记）提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；关键系列（推测解码手记、多模态解码手记、情商解码手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
@@ -44,6 +52,14 @@ const mm = [
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
       <ul class="post-list">
         {mm.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>情商解码手记</h2>
+      <p class="series-tag">系列 · 共 6 篇，循序渐进：从自我觉察与内在框架 → 吸引力与初识 → 两性沟通差异 → 非暴力沟通与关键对话 → 赢得好感与深度连接 → 影响力与长期关系经营。把情商两性邮件里沉淀的知识蒸馏成一条"搞定自己、被真诚看见、懂差异、化冲突、深连接、长经营"的学习主线，每篇附英文对照。</p>
+      <ul class="post-list">
+        {eq.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
