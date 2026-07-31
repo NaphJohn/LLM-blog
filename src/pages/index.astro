@@ -2,12 +2,26 @@
 import SiteHeader from '../components/SiteHeader.astro';
 
 const base = import.meta.env.BASE_URL;
-const posts = [
+const spec = [
   { href: base + 'blog/ep1-speculative-decoding', title: '推测解码：让大模型“一次生成多个 token”的无损加速', date: '2026-07-31' },
   { href: base + 'blog/ep2-arg-ceiling', title: '自回归草稿模型的天花板：为什么卡在 2–3×', date: '2026-07-31' },
   { href: base + 'blog/ep3-dflash', title: 'DFlash 深度解析：块扩散起草 + KV 注入 + 无空转流水线', date: '2026-07-31' },
   { href: base + 'blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
   { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
+];
+const aipapers = [
+  { href: base + 'blog/ai-2026-07-31', title: 'AI论文+产业热点摘要 · 2026-07-31', date: '2026-07-31' },
+  { href: base + 'blog/ai-2026-07-29', title: 'AI论文日报 · 2026-07-29', date: '2026-07-29' },
+  { href: base + 'blog/ai-2026-07-25', title: 'AI论文+产业热点摘要 · 2026-07-25', date: '2026-07-25' },
+  { href: base + 'blog/ai-2026-07-24', title: 'AI论文+产业热点 · 2026-07-24：MoE成本感知投机解码 / Agent失败溯源 / 端侧4B深研', date: '2026-07-24' },
+  { href: base + 'blog/ai-2026-07-23', title: 'AI论文+产业热点摘要 · 2026-07-23', date: '2026-07-23' },
+  { href: base + 'blog/ai-2026-07-22', title: 'AI论文+产业热点摘要 · 2026-07-22', date: '2026-07-22' },
+  { href: base + 'blog/ai-2026-07-19', title: 'AI论文+产业热点摘要 · 2026-07-19', date: '2026-07-19' },
+  { href: base + 'blog/ai-2026-07-18', title: 'AI论文+产业热点摘要 · 2026-07-18', date: '2026-07-18' },
+  { href: base + 'blog/ai-2026-07-16', title: '每日AI论文+产业热点 · 2026-07-16（Stable Diffusion 专题）', date: '2026-07-16' },
+];
+const weekly = [
+  { href: base + 'blog/weekly-2026-07-31', title: '技术周报 · 2026-07-24~07-31（全 7 频道聚合）', date: '2026-07-31' },
 ];
 ---
 
@@ -24,15 +38,28 @@ const posts = [
     <main>
       <h1>大模型技术notes</h1>
       <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记）提供中英对照。</p>
-      <p class="series-tag">推测解码手记 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
 
       <h2>推测解码手记</h2>
+      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
       <ul class="post-list">
-        {posts.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
+        {spec.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>AI论文精读</h2>
+      <p class="series-tag">系列 · 共 9 篇，每日 AI 论文 + 产业热点精读（含原文线索）。</p>
+      <ul class="post-list">
+        {aipapers.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>周报</h2>
+      <p class="series-tag">系列 · 七大频道（AI论文 / vLLM&SGLang / 好书 / 情商 / 副业 / 股票早盘 / 股票收盘）周度聚合。</p>
+      <ul class="post-list">
+        {weekly.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
     </main>
