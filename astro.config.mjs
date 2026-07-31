@@ -4,7 +4,7 @@ import { defineConfig } from 'astro/config';
 // base = 项目页子路径（因为 naphjohn.github.io 用户页已被 Gmeek 博客占用，Astro 放新仓库作项目页）
 export default defineConfig({
   site: 'https://naphjohn.github.io',
-  base: '/spec-decode-blog/',
+  base: '/LLM-blog/',
   i18n: {
     defaultLocale: 'zh',
     locales: ['zh', 'en'],

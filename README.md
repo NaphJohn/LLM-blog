@@ -1,6 +1,6 @@
 # 大模型技术notes
 
-基于 [Astro](https://astro.build) 的双语技术博客（**中文为主**，关键系列提供中英对照），部署于 GitHub Pages 项目页（`naphjohn.github.io/spec-decode-blog/`）。
+基于 [Astro](https://astro.build) 的双语技术博客（**中文为主**，关键系列提供中英对照），部署于 GitHub Pages 项目页（`naphjohn.github.io/LLM-blog/`）。
 
 ## 技术栈
 - Astro 5（静态站点，零运行时依赖）
@@ -38,13 +38,13 @@ src/components/SiteHeader.astro 站点头（含中英切换 + 全局样式）
 ## 推送到 GitHub Pages（需你在本机完成）
 > 本仓库由 WorkBuddy 在本地生成并构建验证；由于运行环境没有 GitHub 凭证，推送需由你执行。
 
-1. 在 GitHub **新建仓库 `spec-decode-blog`**（项目页，仓库名任意，此处用 spec-decode-blog）。
+1. 在 GitHub **新建仓库 `LLM-blog`**（项目页，仓库名任意，此处用 LLM-blog）。
 2. 仓库 **Settings → Pages → Source 选 "GitHub Actions"**。
-3. 在本目录执行（远程已指向 spec-decode-blog，本地已提交，直接推）：
+3. 在本目录执行（远程已指向 LLM-blog，本地已提交，直接推）：
    ```bash
-   git remote set-url origin git@github.com:NaphJohn/spec-decode-blog.git
+   git remote set-url origin git@github.com:NaphJohn/LLM-blog.git
    git push -u origin main
    ```
-4. 等待 Actions 跑完（约 1–2 分钟），访问 https://naphjohn.github.io/spec-decode-blog/
+4. 等待 Actions 跑完（约 1–2 分钟），访问 https://naphjohn.github.io/LLM-blog/
 
-> 若用 HTTPS 而非 SSH，把 remote 换成 `https://github.com/NaphJohn/spec-decode-blog.git`，推送时按提示登录 GitHub（密码填 Personal Access Token）。
+> 若用 HTTPS 而非 SSH，把 remote 换成 `https://github.com/NaphJohn/LLM-blog.git`，推送时按提示登录 GitHub（密码填 Personal Access Token）。
