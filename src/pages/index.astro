@@ -9,13 +9,12 @@ const spec = [
   { href: base + 'blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
   { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
 ];
-const kb = [
-  { href: base + 'blog/kb-language-multimodal-vla', title: '生成式语言模型与多模态范式：从 GPT-1 到 VLA 与世界模型', date: '2026-07-31' },
-  { href: base + 'blog/kb-generative-diffusion-gan', title: '生成模型：扩散与对抗——Stable Diffusion 与 GAN 两条路线', date: '2026-07-31' },
-  { href: base + 'blog/kb-attention-posenc', title: '注意力机制与位置编码：FlashAttention / RoPE / GQA / MLA / RMSNorm', date: '2026-07-31' },
-  { href: base + 'blog/kb-efficient-training-inference', title: '高效训练与推理系统：混合精度 / KV Cache / PagedAttention / PD 分离 / 投机解码 / SwiGLU', date: '2026-07-31' },
-  { href: base + 'blog/kb-peft-ondevice', title: '参数高效微调与端侧智能：LoRA / QLoRA / On-Device Deep Research / EcoSpec', date: '2026-07-31' },
-  { href: base + 'blog/kb-frontier-rl', title: '前沿推理与强化学习：OAT / Ring-Zero / SPS / HiLS-Attention / 探索悖论 RL / AMVL', date: '2026-07-31' },
+const mm = [
+  { href: base + 'blog/mm1-foundations', title: '（一）基础与对齐范式：从"会写"到"会看会动"', date: '2026-07-31' },
+  { href: base + 'blog/mm2-vlm-evolution', title: '（二）视觉语言模型演进：ViT → CLIP → LLaVA', date: '2026-07-31' },
+  { href: base + 'blog/mm3-generation', title: '（三）生成模型：扩散与对抗（Stable Diffusion & GAN）', date: '2026-07-31' },
+  { href: base + 'blog/mm4-vla-world-model', title: '（四）从 VLA 到世界模型：RT-2 → π0.7 → HiF-VLA', date: '2026-07-31' },
+  { href: base + 'blog/mm5-efficiency-frontier', title: '（五）高效系统与前沿推理：注意力 / 推理优化 / 端侧 / RL', date: '2026-07-31' },
 ];
 ---
 
@@ -31,7 +30,7 @@ const kb = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记、AI 知识库）提供中英对照。</p>
+      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记、多模态解码手记）提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
@@ -41,10 +40,10 @@ const kb = [
         ))}
       </ul>
 
-      <h2>AI 知识库</h2>
-      <p class="series-tag">系列 · 共 6 篇，由「AI 论文精读」逐日内容蒸馏而成的知识文档，按主题重组：架构范式 / 生成模型 / 注意力 / 高效系统 / 端侧与 PEFT / 前沿推理与 RL。每篇附英文对照。</p>
+      <h2>多模态解码手记</h2>
+      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
       <ul class="post-list">
-        {kb.map((p) => (
+        {mm.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
