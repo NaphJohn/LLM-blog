@@ -24,6 +24,14 @@ const eq = [
   { href: base + 'en/blog/eq5-win-favor', title: '(5) Winning Favor & Deep Connection — Make the Other "Become Better With You"', date: '2026-08-01' },
   { href: base + 'en/blog/eq6-influence-relationship', title: '(6) Influence & Long-Term Relationship Management — Let Sincerity Be Better Received', date: '2026-08-01' },
 ];
+const fw = [
+  { href: base + 'en/blog/fw1-why-inference-engine', title: '(1) Why an Inference Engine — Three Walls of Naive Serving', date: '2026-08-01' },
+  { href: base + 'en/blog/fw2-vllm-internals', title: '(2) vLLM Internals — From Paged KV to Model Runner V2', date: '2026-08-01' },
+  { href: base + 'en/blog/fw3-sglang-internals', title: '(3) SGLang Internals — Prefix Reuse & Frontier Throughput', date: '2026-08-01' },
+  { href: base + 'en/blog/fw4-frontier-battles', title: '(4) The Shared Frontier — Sync Stalls, Spec Decode, PD, Low-Bit Quant', date: '2026-08-01' },
+  { href: base + 'en/blog/fw5-evolution-timeline', title: '(5) The July 2026 Release Waves — vLLM 0.25→0.26 & SGLang 0.5.15→0.5.16', date: '2026-08-01' },
+  { href: base + 'en/blog/fw6-model-support-selection', title: '(6) Supported Models & Selection Guide — Who to Pick', date: '2026-08-01' },
+];
 ---
 
 <!doctype html>
@@ -38,7 +46,7 @@ const eq = [
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; key series (Speculative Decoding Notes, Multimodal Decoding Notes, Emotional Intelligence Decoding Notes) are bilingual.</p>
+      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; four key series (Speculative Decoding Notes, Multimodal Decoding Notes, Emotional Intelligence Decoding Notes, vLLM & SGLang Serving Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 5 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head. Each post has a Chinese counterpart.</p>
@@ -66,6 +74,17 @@ const eq = [
       <p class="series-tag">Series · 6 episodes, in order: self-awareness & inner frame → attraction & first contact → gender communication differences → nonviolent communication & crucial conversations → winning favor & deep connection → influence & long-term management. A progressive arc distilling the EQ knowledge from daily emails into one line: stabilize self, be sincerely seen, understand differences, resolve conflict, connect deeply, manage long-term. Each with a Chinese counterpart.</p>
       <ul class="post-list">
         {eq.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2>vLLM &amp; SGLang Serving Notes</h2>
+      <p class="series-tag">Series · 6 episodes, in order: why an inference engine → vLLM internals → SGLang internals → the shared frontier (sync stalls / spec decode / PD disagg / low-bit quant) → the July 2026 release waves → supported models & selection guide. The daily vLLM/SGLang tracking distilled into one arc, with hand-drawn SVG architecture diagrams, each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {fw.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>
