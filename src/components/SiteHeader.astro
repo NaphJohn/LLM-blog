@@ -1,15 +1,17 @@
 ---
 const { lang = 'zh', altLang, altHref } = Astro.props;
 const siteName = '大模型技术notes';
-const homeHref = lang === 'zh' ? '/' : '/en/';
-const seriesHref = lang === 'zh' ? '/' : '/en/';
+const base = import.meta.env.BASE_URL; // 项目页子路径，如 /spec-decode-blog/
+const homeHref = lang === 'zh' ? base : base + 'en/';
+const seriesHref = homeHref;
+const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
 ---
 
 <header class="site-header">
   <a href={homeHref} class="brand">{siteName}</a>
   <nav>
     <a href={seriesHref}>推测解码手记</a>
-    {altHref && <a href={altHref} class="lang-switch">{altLang === 'en' ? 'English' : '中文'}</a>}
+    {altHrefFull && <a href={altHrefFull} class="lang-switch">{altLang === 'en' ? 'English' : '中文'}</a>}
   </nav>
 </header>
 

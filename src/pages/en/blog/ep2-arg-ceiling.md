@@ -69,4 +69,4 @@ Since the bottleneck is "serial drafting" and "in-block ordering", the path forw
 
 Next, we dive into **DFlash** internals.
 
-> This is Ep2 of the "Speculative Decoding Notes" series. Next: [DFlash Deep Dive](/en/blog/ep3-dflash). For the head-to-head, see [DFlash vs DSpark](/en/blog/ep5-dflash-vs-dspark).
+> This is Ep2 of the "Speculative Decoding Notes" series. Next: [DFlash Deep Dive](../ep3-dflash). For the head-to-head, see [DFlash vs DSpark](../ep5-dflash-vs-dspark).

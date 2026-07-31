@@ -44,6 +44,6 @@ Like DFlash, DSpark is **lossless speculative decoding**: the draft block goes t
 
 ## 6. Relationship to DFlash (preview)
 
-DSpark changes "draft ordering + verification-length scheduling"; DFlash changes "draft parallelism paradigm + execution engine" — they are **on different layers and orthogonal, hence composable**. That is exactly why OpenInfer can run **both** paths on Qwen3-4B. Full comparison: [DFlash vs DSpark](/en/blog/ep5-dflash-vs-dspark).
+DSpark changes "draft ordering + verification-length scheduling"; DFlash changes "draft parallelism paradigm + execution engine" — they are **on different layers and orthogonal, hence composable**. That is exactly why OpenInfer can run **both** paths on Qwen3-4B. Full comparison: [DFlash vs DSpark](../ep5-dflash-vs-dspark).
 
-> This is Ep4 of the "Speculative Decoding Notes" series. Prior: [DFlash Deep Dive](/en/blog/ep3-dflash); head-to-head: [DFlash vs DSpark](/en/blog/ep5-dflash-vs-dspark).
+> This is Ep4 of the "Speculative Decoding Notes" series. Prior: [DFlash Deep Dive](../ep3-dflash); head-to-head: [DFlash vs DSpark](../ep5-dflash-vs-dspark).

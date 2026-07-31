@@ -1,12 +1,13 @@
 ---
 import SiteHeader from '../components/SiteHeader.astro';
 
+const base = import.meta.env.BASE_URL;
 const posts = [
-  { href: '/blog/ep1-speculative-decoding', title: '推测解码：让大模型“一次生成多个 token”的无损加速', date: '2026-07-31' },
-  { href: '/blog/ep2-arg-ceiling', title: '自回归草稿模型的天花板：为什么卡在 2–3×', date: '2026-07-31' },
-  { href: '/blog/ep3-dflash', title: 'DFlash 深度解析：块扩散起草 + KV 注入 + 无空转流水线', date: '2026-07-31' },
-  { href: '/blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
-  { href: '/blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
+  { href: base + 'blog/ep1-speculative-decoding', title: '推测解码：让大模型“一次生成多个 token”的无损加速', date: '2026-07-31' },
+  { href: base + 'blog/ep2-arg-ceiling', title: '自回归草稿模型的天花板：为什么卡在 2–3×', date: '2026-07-31' },
+  { href: base + 'blog/ep3-dflash', title: 'DFlash 深度解析：块扩散起草 + KV 注入 + 无空转流水线', date: '2026-07-31' },
+  { href: base + 'blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
+  { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
 ];
 ---
 

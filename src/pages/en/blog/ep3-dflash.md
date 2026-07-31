@@ -54,4 +54,4 @@ This is what separates DFlash from "pure-algorithm" approaches: **it changes bot
 
 DFlash's triple move — **block-diffusion parallel drafting + KV injection for higher acceptance + bubble-free pipeline** — lifts SD from 2–3× to 6×. Next we look at the alternative route **DSpark**: instead of diffusion, it uses semi-autoregressive drafting + a Markov head + a confidence scheduler to take a different path.
 
-> This is Ep3 of the "Speculative Decoding Notes" series. Prior: [The Autoregressive Drafter's Ceiling](/en/blog/ep2-arg-ceiling); head-to-head: [DFlash vs DSpark](/en/blog/ep5-dflash-vs-dspark); next: [DSpark Deep Dive](/en/blog/ep4-dspark).
+> This is Ep3 of the "Speculative Decoding Notes" series. Prior: [The Autoregressive Drafter's Ceiling](../ep2-arg-ceiling); head-to-head: [DFlash vs DSpark](../ep5-dflash-vs-dspark); next: [DSpark Deep Dive](../ep4-dspark).

@@ -54,4 +54,4 @@ layout: ../../layouts/BlogPost.astro
 
 DFlash 用"**块扩散并行起草 + KV 注入抬接受率 + 无空转流水线**"三连击，把 SD 从 2–3× 拉到 6×。下一篇我们看另一条路线 **DSpark**：它不靠扩散，而是用半自回归 + 马尔可夫头 + 置信度调度另辟蹊径。
 
-> 本篇属于「推测解码手记」系列 Ep3。前情：[自回归草稿的天花板](/blog/ep2-arg-ceiling)；对比视角：[DFlash vs DSpark](/blog/ep5-dflash-vs-dspark)；下一篇：[DSpark 深度解析](/blog/ep4-dspark)。
+> 本篇属于「推测解码手记」系列 Ep3。前情：[自回归草稿的天花板](../ep2-arg-ceiling)；对比视角：[DFlash vs DSpark](../ep5-dflash-vs-dspark)；下一篇：[DSpark 深度解析](../ep4-dspark)。

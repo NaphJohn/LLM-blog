@@ -69,4 +69,4 @@ P(accept) = min(1, p_target(token) / p_draft(token))
 
 下一篇，我们先深入 **DFlash** 的内部机制。
 
-> 本篇属于「推测解码手记」系列 Ep2。下一篇：[DFlash 深度解析](/blog/ep3-dflash)。对比视角可先看 [DFlash vs DSpark](/blog/ep5-dflash-vs-dspark)。
+> 本篇属于「推测解码手记」系列 Ep2。下一篇：[DFlash 深度解析](../ep3-dflash)。对比视角可先看 [DFlash vs DSpark](../ep5-dflash-vs-dspark)。

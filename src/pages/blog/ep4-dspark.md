@@ -44,6 +44,6 @@ layout: ../../layouts/BlogPost.astro
 
 ## 6. 与 DFlash 的关系（预告）
 
-DSpark 改的是"草稿顺序建模 + 验证长度调度"，DFlash 改的是"草稿并行范式 + 执行引擎"——二者**不在同一层，正交可叠加**。这正是 OpenInfer 能在 Qwen3-4B 上**同时**挂两套路径的原因。完整对比见 [DFlash vs DSpark](/blog/ep5-dflash-vs-dspark)。
+DSpark 改的是"草稿顺序建模 + 验证长度调度"，DFlash 改的是"草稿并行范式 + 执行引擎"——二者**不在同一层，正交可叠加**。这正是 OpenInfer 能在 Qwen3-4B 上**同时**挂两套路径的原因。完整对比见 [DFlash vs DSpark](../ep5-dflash-vs-dspark)。
 
-> 本篇属于「推测解码手记」系列 Ep4。前情：[DFlash 深度解析](/blog/ep3-dflash)；对比篇：[DFlash vs DSpark](/blog/ep5-dflash-vs-dspark)。
+> 本篇属于「推测解码手记」系列 Ep4。前情：[DFlash 深度解析](../ep3-dflash)；对比篇：[DFlash vs DSpark](../ep5-dflash-vs-dspark)。
