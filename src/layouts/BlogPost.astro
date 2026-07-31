@@ -1,6 +1,8 @@
 ---
 import SiteHeader from '../components/SiteHeader.astro';
 
+// Astro 5: markdown frontmatter is nested under Astro.props.frontmatter
+const { frontmatter } = Astro.props;
 const {
   title,
   description,
@@ -9,7 +11,7 @@ const {
   altLang,
   altHref,
   lang = 'zh',
-} = Astro.props;
+} = frontmatter;
 ---
 
 <!doctype html>
@@ -21,7 +23,7 @@ const {
     {description && <meta name="description" content={description} />}
   </head>
   <body>
-    <SiteHeader lang={lang} altLang={altLang} altHref={altHref} />
+    <SiteHeader lang={lang} altLang={altLang} altHref={altHref} series={series} />
     <main>
       {series && <span class="series-tag">系列：{series}</span>}
       <h1>{title}</h1>

@@ -1,5 +1,5 @@
 ---
-const { lang = 'zh', altLang, altHref } = Astro.props;
+const { lang = 'zh', altLang, altHref, series } = Astro.props;
 const siteName = '大模型技术notes';
 const base = import.meta.env.BASE_URL; // 项目页子路径，如 /LLM-blog/
 const homeHref = lang === 'zh' ? base : base + 'en/';
@@ -10,7 +10,7 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
 <header class="site-header">
   <a href={homeHref} class="brand">{siteName}</a>
   <nav>
-    <a href={seriesHref}>推测解码手记</a>
+    {series && <a href={seriesHref}>{series}</a>}
     {altHrefFull && <a href={altHrefFull} class="lang-switch">{altLang === 'en' ? 'English' : '中文'}</a>}
   </nav>
 </header>
