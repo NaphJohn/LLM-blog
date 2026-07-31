@@ -9,30 +9,13 @@ const spec = [
   { href: base + 'blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
   { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
 ];
-const aipapers = [
-  { href: base + 'blog/ai-2026-07-31', title: 'AI论文+产业热点摘要 · 2026-07-31', date: '2026-07-31' },
-  { href: base + 'blog/ai-2026-07-29', title: 'AI论文日报 · 2026-07-29', date: '2026-07-29' },
-  { href: base + 'blog/ai-2026-07-25', title: 'AI论文+产业热点摘要 · 2026-07-25', date: '2026-07-25' },
-  { href: base + 'blog/ai-2026-07-24', title: 'AI论文+产业热点 · 2026-07-24：MoE成本感知投机解码 / Agent失败溯源 / 端侧4B深研', date: '2026-07-24' },
-  { href: base + 'blog/ai-2026-07-23', title: 'AI论文+产业热点摘要 · 2026-07-23', date: '2026-07-23' },
-  { href: base + 'blog/ai-2026-07-22', title: 'AI论文+产业热点摘要 · 2026-07-22', date: '2026-07-22' },
-  { href: base + 'blog/ai-2026-07-19', title: 'AI论文+产业热点摘要 · 2026-07-19', date: '2026-07-19' },
-  { href: base + 'blog/ai-2026-07-18', title: 'AI论文+产业热点摘要 · 2026-07-18', date: '2026-07-18' },
-  { href: base + 'blog/ai-2026-07-16', title: '每日AI论文+产业热点 · 2026-07-16（Stable Diffusion 专题）', date: '2026-07-16' },
-];
-const weekly = [
-  { href: base + 'blog/weekly-2026-07-31', title: '技术周报 · 2026-07-24~07-31（全 7 频道聚合）', date: '2026-07-31' },
-];
-const eng = [
-  { href: base + 'blog/eng-operator-notes', title: '算子讲解合集（已讲解算子记录）', date: '2026-07-31' },
-  { href: base + 'blog/eng-model-tech-index', title: '模型技术资产索引与知识地图', date: '2026-07-31' },
-  { href: base + 'blog/eng-model-tech-overview', title: '模型技术总览 · 结构与原理解读', date: '2026-07-31' },
-  { href: base + 'blog/eng-perf-notes', title: '性能优化合集（已讲解话题记录）', date: '2026-07-31' },
-  { href: base + 'blog/eng-zhihu-speculative-ssm', title: '大模型推理为什么这么慢？聊聊投机解码与混血模型的落子难题', date: '2026-07-31' },
-  { href: base + 'blog/eng-ai-knowledge-base', title: 'AI 知识库 · 大模型技术每日沉淀', date: '2026-07-31' },
-  { href: base + 'blog/eng-vllm-sglang-2026-07-16', title: 'vLLM & SGLang 社区跟踪 · 2026-07-16（周四）', date: '2026-07-16' },
-  { href: base + 'blog/eng-vllm-sglang-2026-07-14', title: 'vLLM & SGLang 社区跟踪 · 2026-07-14（周二）', date: '2026-07-14' },
-  { href: base + 'blog/eng-vllm-sglang-2026-07-13', title: 'vLLM & SGLang 社区跟踪 · 2026-07-13', date: '2026-07-13' },
+const kb = [
+  { href: base + 'blog/kb-language-multimodal-vla', title: '生成式语言模型与多模态范式：从 GPT-1 到 VLA 与世界模型', date: '2026-07-31' },
+  { href: base + 'blog/kb-generative-diffusion-gan', title: '生成模型：扩散与对抗——Stable Diffusion 与 GAN 两条路线', date: '2026-07-31' },
+  { href: base + 'blog/kb-attention-posenc', title: '注意力机制与位置编码：FlashAttention / RoPE / GQA / MLA / RMSNorm', date: '2026-07-31' },
+  { href: base + 'blog/kb-efficient-training-inference', title: '高效训练与推理系统：混合精度 / KV Cache / PagedAttention / PD 分离 / 投机解码 / SwiGLU', date: '2026-07-31' },
+  { href: base + 'blog/kb-peft-ondevice', title: '参数高效微调与端侧智能：LoRA / QLoRA / On-Device Deep Research / EcoSpec', date: '2026-07-31' },
+  { href: base + 'blog/kb-frontier-rl', title: '前沿推理与强化学习：OAT / Ring-Zero / SPS / HiLS-Attention / 探索悖论 RL / AMVL', date: '2026-07-31' },
 ];
 ---
 
@@ -48,7 +31,7 @@ const eng = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记）提供中英对照。</p>
+      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记、AI 知识库）提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
@@ -58,26 +41,10 @@ const eng = [
         ))}
       </ul>
 
-      <h2>AI论文精读</h2>
-      <p class="series-tag">系列 · 共 9 篇，每日 AI 论文 + 产业热点精读（含原文线索）。</p>
+      <h2>AI 知识库</h2>
+      <p class="series-tag">系列 · 共 6 篇，由「AI 论文精读」逐日内容蒸馏而成的知识文档，按主题重组：架构范式 / 生成模型 / 注意力 / 高效系统 / 端侧与 PEFT / 前沿推理与 RL。每篇附英文对照。</p>
       <ul class="post-list">
-        {aipapers.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>周报</h2>
-      <p class="series-tag">系列 · 七大频道（AI论文 / vLLM&SGLang / 好书 / 情商 / 副业 / 股票早盘 / 股票收盘）周度聚合。</p>
-      <ul class="post-list">
-        {weekly.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>大模型工程实践</h2>
-      <p class="series-tag">系列 · 共 9 篇，从知识库 / 技术总览 / 算子 / 性能优化 / vLLM&SGLang 跟踪到知乎科普，构建由浅入深的大模型工程知识体系。</p>
-      <ul class="post-list">
-        {eng.map((p) => (
+        {kb.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
