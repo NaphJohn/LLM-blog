@@ -1,0 +1,36 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+
+const posts = [
+  { href: '/blog/ep1-speculative-decoding', title: '推测解码：让大模型“一次生成多个 token”的无损加速', date: '2026-07-31' },
+  { href: '/blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
+];
+---
+
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>大模型技术notes</title>
+    <meta name="description" content="大模型推理、训练与系统优化技术笔记，中文为主，关键系列提供中英对照。" />
+  </head>
+  <body>
+    <SiteHeader lang="zh" altLang="en" altHref="/en/" />
+    <main>
+      <h1>大模型技术notes</h1>
+      <p class="lead">记录大模型推理、训练与系统优化的技术笔记。本站以中文为主；关键系列（推测解码手记）提供中英对照。</p>
+
+      <h2>推测解码手记</h2>
+      <ul class="post-list">
+        {posts.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+    </main>
+    <footer>© 2026 大模型技术notes · 托管于 GitHub Pages</footer>
+  </body>
+</html>

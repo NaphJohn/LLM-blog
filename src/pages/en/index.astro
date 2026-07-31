@@ -1,0 +1,36 @@
+---
+import SiteHeader from '../../components/SiteHeader.astro';
+
+const posts = [
+  { href: '/en/blog/ep1-speculative-decoding', title: 'Speculative Decoding: Lossless Multi-Token Generation', date: '2026-07-31' },
+  { href: '/en/blog/ep5-dflash-vs-dspark', title: 'Head-to-Head: Where DFlash and DSpark Actually Differ', date: '2026-07-31' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LLM Tech Notes</title>
+    <meta name="description" content="Notes on LLM inference, training and systems optimization. Chinese-first, with key series bilingual." />
+  </head>
+  <body>
+    <SiteHeader lang="en" altLang="zh" altHref="/" />
+    <main>
+      <h1>LLM Tech Notes</h1>
+      <p class="lead">Notes on LLM inference, training and systems optimization. Chinese-first; key series (Speculative Decoding Notes) are bilingual.</p>
+
+      <h2>Speculative Decoding Notes</h2>
+      <ul class="post-list">
+        {posts.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+    </main>
+    <footer>© 2026 LLM Tech Notes · Hosted on GitHub Pages</footer>
+  </body>
+</html>

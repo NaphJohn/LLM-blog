@@ -1,0 +1,35 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+
+const {
+  title,
+  description,
+  pubDate,
+  series,
+  altLang,
+  altHref,
+  lang = 'zh',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} · 大模型技术notes</title>
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body>
+    <SiteHeader lang={lang} altLang={altLang} altHref={altHref} />
+    <main>
+      {series && <span class="series-tag">系列：{series}</span>}
+      <h1>{title}</h1>
+      {pubDate && <time datetime={pubDate}>{pubDate}</time>}
+      <article class="prose">
+        <slot />
+      </article>
+    </main>
+    <footer>© 2026 大模型技术notes · 托管于 GitHub Pages</footer>
+  </body>
+</html>
