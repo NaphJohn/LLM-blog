@@ -46,7 +46,7 @@ const fw = [
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; four key series (Speculative Decoding Notes, Multimodal Decoding Notes, Emotional Intelligence Decoding Notes, vLLM & SGLang Serving Notes) are bilingual.</p>
+      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; four key series (Speculative Decoding Notes, Multimodal Decoding Notes, vLLM & SGLang Serving Notes, Emotional Intelligence Decoding Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 5 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head. Each post has a Chinese counterpart.</p>
@@ -70,10 +70,10 @@ const fw = [
         ))}
       </ul>
 
-      <h2>Emotional Intelligence Decoding Notes</h2>
-      <p class="series-tag">Series · 6 episodes, in order: self-awareness & inner frame → attraction & first contact → gender communication differences → nonviolent communication & crucial conversations → winning favor & deep connection → influence & long-term management. A progressive arc distilling the EQ knowledge from daily emails into one line: stabilize self, be sincerely seen, understand differences, resolve conflict, connect deeply, manage long-term. Each with a Chinese counterpart.</p>
+      <h2>vLLM &amp; SGLang Serving Notes</h2>
+      <p class="series-tag">Series · 6 episodes, in order: why an inference engine → vLLM internals → SGLang internals → the shared frontier (sync stalls / spec decode / PD disagg / low-bit quant) → the July 2026 release waves → supported models & selection guide. The daily vLLM/SGLang tracking distilled into one arc, with hand-drawn SVG architecture diagrams, each with a Chinese counterpart.</p>
       <ul class="post-list">
-        {eq.map((p) => (
+        {fw.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>
@@ -81,10 +81,10 @@ const fw = [
         ))}
       </ul>
 
-      <h2>vLLM &amp; SGLang Serving Notes</h2>
-      <p class="series-tag">Series · 6 episodes, in order: why an inference engine → vLLM internals → SGLang internals → the shared frontier (sync stalls / spec decode / PD disagg / low-bit quant) → the July 2026 release waves → supported models & selection guide. The daily vLLM/SGLang tracking distilled into one arc, with hand-drawn SVG architecture diagrams, each with a Chinese counterpart.</p>
+      <h2>Emotional Intelligence Decoding Notes</h2>
+      <p class="series-tag">Series · 6 episodes, in order: self-awareness & inner frame → attraction & first contact → gender communication differences → nonviolent communication & crucial conversations → winning favor & deep connection → influence & long-term management. A progressive arc distilling the EQ knowledge from daily emails into one line: stabilize self, be sincerely seen, understand differences, resolve conflict, connect deeply, manage long-term. Each with a Chinese counterpart.</p>
       <ul class="post-list">
-        {fw.map((p) => (
+        {eq.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>

@@ -46,7 +46,7 @@ const fw = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；四大系列（推测解码手记、多模态解码手记、情商解码手记、vLLM 与 SGLang 框架解码手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；四大系列（推测解码手记、多模态解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
@@ -64,18 +64,18 @@ const fw = [
         ))}
       </ul>
 
-      <h2>情商解码手记</h2>
-      <p class="series-tag">系列 · 共 6 篇，循序渐进：从自我觉察与内在框架 → 吸引力与初识 → 两性沟通差异 → 非暴力沟通与关键对话 → 赢得好感与深度连接 → 影响力与长期关系经营。把情商两性邮件里沉淀的知识蒸馏成一条"搞定自己、被真诚看见、懂差异、化冲突、深连接、长经营"的学习主线，每篇附英文对照。</p>
-      <ul class="post-list">
-        {eq.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
       <h2>vLLM 与 SGLang 框架解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
       <ul class="post-list">
         {fw.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>情商解码手记</h2>
+      <p class="series-tag">系列 · 共 6 篇，循序渐进：从自我觉察与内在框架 → 吸引力与初识 → 两性沟通差异 → 非暴力沟通与关键对话 → 赢得好感与深度连接 → 影响力与长期关系经营。把情商两性邮件里沉淀的知识蒸馏成一条"搞定自己、被真诚看见、懂差异、化冲突、深连接、长经营"的学习主线，每篇附英文对照。</p>
+      <ul class="post-list">
+        {eq.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
