@@ -53,10 +53,6 @@ DFlash 与 DSpark 都建立在推测解码（Speculative Decoding, SD）范式�
 
 DFlash 改的是“草稿怎么生成”和“怎么执行”，DSpark 改的是“块内顺序怎么建”和“验证多少 token”。它们作用在**不同层面**，因此正交：OpenInfer 能在 Qwen3-4B 上**同时挂两套路径**——一端是 DFlash 的 block-diffusion drafter + KV injection + overlap scheduler，另一端是 DSpark 的 semi-AR drafter + Markov head + confidence scheduler。
 
-## 5. 发布提醒（重要）
+## 5. 一个常见的误区
 
-对外写博客 / 论文时，建议**点明你们是“独立双后端”还是“drafter 互换 + 共享执行引擎”**。读者很容易误以为“两套 drafter 是并联运行”，其实更可能是共享同一套 verify 流水线、只是 draft 阶段互换。具体以 OpenInfer 代码 / 官方博客为准。
-
-## 6. 下一篇
-
-实测篇（在 OpenInfer Qwen3-4B 上跑通 DFlash 与 DSpark）将给出评测方法与数据——**仅发布已验证的数字**，若某些数据尚待复核则先不发布。
+DFlash 与 DSpark **正交可叠加**，但二者并非“并联同时跑两套草稿”。更可能的实现是：**共享同一套 verify 流水线，只是 draft 阶段在两种方案间互换**。具体实现以 OpenInfer 代码 / 官方博客为准。

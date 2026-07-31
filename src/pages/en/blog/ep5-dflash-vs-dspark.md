@@ -53,10 +53,6 @@ Below we pull them apart dimension by dimension.
 
 DFlash changes "how the draft is produced" and "how it is executed"; DSpark changes "how intra-block order is built" and "how many tokens to verify". They operate at **different layers**, hence orthogonal: OpenInfer can mount **both paths on Qwen3-4B simultaneously** — one side is DFlash's block-diffusion drafter + KV injection + overlap scheduler, the other is DSpark's semi-AR drafter + Markov head + confidence scheduler.
 
-## 5. Publishing note (important)
+## 5. A common misconception
 
-When writing the blog post / paper, we recommend **stating clearly whether you use "independent dual backends" or "interchangeable drafters + shared execution engine"**. Readers easily assume "the two drafters run in parallel", whereas in practice it is more likely a shared verify pipeline with only the draft stage swapped. Definitive wording should follow the OpenInfer code / official blog.
-
-## 6. What's next
-
-The benchmark post (running DFlash & DSpark on OpenInfer Qwen3-4B) will give the methodology and numbers — **only verified numbers will be published**; if some data is still under review, it will be held back.
+DFlash and DSpark are *orthogonal and stackable*, but they do **not** "run two drafters in parallel at the same time". The more likely picture is: **a single shared verify pipeline, with only the draft stage swapped between the two schemes**. Definitive wording should follow the OpenInfer code / official blog.
