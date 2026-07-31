@@ -23,6 +23,17 @@ const aipapers = [
 const weekly = [
   { href: base + 'blog/weekly-2026-07-31', title: '技术周报 · 2026-07-24~07-31（全 7 频道聚合）', date: '2026-07-31' },
 ];
+const eng = [
+  { href: base + 'blog/eng-operator-notes', title: '算子讲解合集（已讲解算子记录）', date: '2026-07-31' },
+  { href: base + 'blog/eng-model-tech-index', title: '模型技术资产索引与知识地图', date: '2026-07-31' },
+  { href: base + 'blog/eng-model-tech-overview', title: '模型技术总览 · 结构与原理解读', date: '2026-07-31' },
+  { href: base + 'blog/eng-perf-notes', title: '性能优化合集（已讲解话题记录）', date: '2026-07-31' },
+  { href: base + 'blog/eng-zhihu-speculative-ssm', title: '大模型推理为什么这么慢？聊聊投机解码与混血模型的落子难题', date: '2026-07-31' },
+  { href: base + 'blog/eng-ai-knowledge-base', title: 'AI 知识库 · 大模型技术每日沉淀', date: '2026-07-31' },
+  { href: base + 'blog/eng-vllm-sglang-2026-07-16', title: 'vLLM & SGLang 社区跟踪 · 2026-07-16（周四）', date: '2026-07-16' },
+  { href: base + 'blog/eng-vllm-sglang-2026-07-14', title: 'vLLM & SGLang 社区跟踪 · 2026-07-14（周二）', date: '2026-07-14' },
+  { href: base + 'blog/eng-vllm-sglang-2026-07-13', title: 'vLLM & SGLang 社区跟踪 · 2026-07-13', date: '2026-07-13' },
+];
 ---
 
 <!doctype html>
@@ -59,6 +70,14 @@ const weekly = [
       <p class="series-tag">系列 · 七大频道（AI论文 / vLLM&SGLang / 好书 / 情商 / 副业 / 股票早盘 / 股票收盘）周度聚合。</p>
       <ul class="post-list">
         {weekly.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>大模型工程实践</h2>
+      <p class="series-tag">系列 · 共 9 篇，从知识库 / 技术总览 / 算子 / 性能优化 / vLLM&SGLang 跟踪到知乎科普，构建由浅入深的大模型工程知识体系。</p>
+      <ul class="post-list">
+        {eng.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
