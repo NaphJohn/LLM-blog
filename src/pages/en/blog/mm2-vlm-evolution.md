@@ -36,6 +36,11 @@ LLaVA proved one thing: **you do not need to train a multimodal LLM from scratch
   2. *Instruction fine-tuning*: attach the 158K instructions, unfreeze the LLM and train together.
 - **Results**: GPT-4-as-Judge relative score 85.1%, ScienceQA 92.53% SOTA.
 
+<div class="fig">
+  <img src="/llava_arch.svg" alt="LLaVA architecture: input image encoded by frozen CLIP ViT-L/14, bridged via a trainable projection to Vicuna's text-embedding space, concatenated with text tokens and autoregressively decoded by the LLM" />
+  <p class="fig-cap">Fig: The LLaVA standard paradigm — frozen vision encoder + light projection bridge + LLM fine-tuning (redrawn)</p>
+</div>
+
 > This paradigm (frozen vision encoder + projection bridge + LLM fine-tuning) spawned LLaVA-1.5 / NeXT, CogVLM, InternVL, Qwen-VL — almost every "chat about an image" model today descends from this skeleton.
 
 ## 5. What Determines a VLM's Quality

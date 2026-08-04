@@ -36,6 +36,11 @@ LLaVA 证明了一件事：**不需要从头训一个多模态大模型，冻结
   2. **指令微调**：接上 158K 指令数据，解冻 LLM 一起训。
 - **效果**：GPT-4-as-Judge 相对分 85.1%，ScienceQA 92.53% SOTA。
 
+<div class="fig">
+  <img src="/llava_arch.svg" alt="LLaVA 架构：输入图像经冻结 CLIP ViT-L/14 编码，经可训练投影层桥接到 Vicuna 文本嵌入空间，与文本 token 拼接后由 LLM 自回归解码" />
+  <p class="fig-cap">图：LLaVA 标准范式——冻结视觉编码器 + 轻量投影桥接 + LLM 微调（重绘）</p>
+</div>
+
 > 这一范式（冻结视觉编码器 + 投影桥接 + LLM 微调）催生了 LLaVA-1.5 / NeXT、CogVLM、InternVL、Qwen-VL 整条生态——今天你看到的绝大多数"能看图聊天"的模型，骨架都源自这里。
 
 ## 5. 什么决定一个 VLM 的好坏

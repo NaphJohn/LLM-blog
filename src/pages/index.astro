@@ -33,6 +33,13 @@ const fw = [
   { href: base + 'blog/fw5-evolution-timeline', title: '（五）版本演进时间线：2026 年 7 月的两轮换代', date: '2026-08-01' },
   { href: base + 'blog/fw6-model-support-selection', title: '（六）支持的模型与选型指南：什么场景该选谁', date: '2026-08-01' },
 ];
+const vla = [
+  { href: base + 'blog/vla1-basics', title: '（一）从「看懂」到「动手」：什么是视觉-语言-动作模型', date: '2026-08-04' },
+  { href: base + 'blog/vla2-action-generation', title: '（二）动作生成的发动机：Diffusion Policy、Flow Matching 与低延迟', date: '2026-08-04' },
+  { href: base + 'blog/vla3-pi-family', title: '（三）π 系列演进：Physical Intelligence 的 VLA 路线', date: '2026-08-04' },
+  { href: base + 'blog/vla4-china-players', title: '（四）国内重点玩家：蚂蚁灵波、小米、腾讯', date: '2026-08-04' },
+  { href: base + 'blog/vla5-world-model', title: '（五）世界模型与落地：VLA 的下一站', date: '2026-08-04' },
+];
 ---
 
 <!doctype html>
@@ -47,7 +54,7 @@ const fw = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；四大系列（推测解码手记、多模态解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；五大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -77,6 +84,14 @@ const fw = [
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从自我觉察与内在框架 → 吸引力与初识 → 两性沟通差异 → 非暴力沟通与关键对话 → 赢得好感与深度连接 → 影响力与长期关系经营。把情商两性邮件里沉淀的知识蒸馏成一条"搞定自己、被真诚看见、懂差异、化冲突、深连接、长经营"的学习主线，每篇附英文对照。</p>
       <ul class="post-list">
         {eq.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>VLA 解码手记</h2>
+      <p class="series-tag">系列 · 共 5 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
+      <ul class="post-list">
+        {vla.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
