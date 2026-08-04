@@ -19,6 +19,18 @@ const {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
     <title>{title} · 大模型技术notes</title>
     {description && <meta name="description" content={description} />}
   </head>
@@ -31,7 +43,50 @@ const {
       <article class="prose">
         <slot />
       </article>
+
+      <section class="engage">
+        <button id="like-btn" class="like-btn" type="button" aria-pressed="false">
+          <span class="like-ico">👍</span>
+          <span class="like-label">点赞</span>
+          <span id="like-count" class="like-count">0</span>
+        </button>
+        <p class="engage-tip">觉得有用？欢迎点赞，或请我喝杯咖啡 ☕</p>
+        <div class="reward">
+          <div class="reward-col">
+            <div class="reward-qr">支付宝收款码</div>
+            <p>支付宝</p>
+          </div>
+          <div class="reward-col">
+            <div class="reward-qr">微信收款码</div>
+            <p>微信</p>
+          </div>
+        </div>
+        <p class="reward-note">打赏二维码待上传：把支付宝 / 微信收款码图片放到 <code>public/reward/alipay.png</code> 与 <code>public/reward/wechat.png</code>，再把上方占位 <code>div.reward-qr</code> 换成 <code>&lt;img&gt;</code> 即可。</p>
+      </section>
     </main>
+
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById('like-btn');
+        if (!btn) return;
+        var cnt = document.getElementById('like-count');
+        var key = 'like:' + location.pathname;
+        function read() { try { return localStorage.getItem(key) === '1'; } catch (e) { return false; } }
+        function render() {
+          var liked = read();
+          btn.classList.toggle('liked', liked);
+          btn.setAttribute('aria-pressed', liked ? 'true' : 'false');
+          cnt.textContent = liked ? '1' : '0';
+        }
+        render();
+        btn.addEventListener('click', function () {
+          var liked = !read();
+          try { localStorage.setItem(key, liked ? '1' : '0'); } catch (e) {}
+          render();
+          if (liked) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
+        });
+      })();
+    </script>
     <footer>© 2026 大模型技术notes · 托管于 GitHub Pages</footer>
   </body>
 </html>

@@ -12,8 +12,28 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
   <nav>
     {series && <a href={seriesHref}>{series}</a>}
     {altHrefFull && <a href={altHrefFull} class="lang-switch">{altLang === 'en' ? 'English' : '中文'}</a>}
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="切换日间/夜间模式">🌙</button>
   </nav>
 </header>
+
+<script is:inline>
+  (function () {
+    var btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    function sync() {
+      var t = document.documentElement.getAttribute('data-theme');
+      btn.textContent = t === 'dark' ? '☀️' : '🌙';
+    }
+    sync();
+    btn.addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme');
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      sync();
+    });
+  })();
+</script>
 
 <style is:global>
   :root {
@@ -24,8 +44,17 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
     --border: #e5e7eb;
     --code-bg: #f6f8fa;
   }
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --border: #30363d;
+    --code-bg: #161b22;
+  }
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; transition: background-color .25s ease, color .25s ease; }
+  body { transition: background-color .25s ease, color .25s ease; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
@@ -42,6 +71,14 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
   .site-header nav a { margin-left: 18px; color: var(--muted); text-decoration: none; font-size: 15px; }
   .site-header nav a:hover { color: var(--accent); }
   .lang-switch { font-weight: 600; color: var(--accent) !important; }
+  .theme-toggle {
+    margin-left: 14px; width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--border); background: transparent; color: var(--fg);
+    cursor: pointer; font-size: 16px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: transform .4s ease, background-color .2s ease, border-color .2s ease;
+  }
+  .theme-toggle:hover { transform: rotate(25deg); background: var(--code-bg); }
   main { max-width: 760px; margin: 0 auto; padding: 36px 24px 64px; }
   .series-tag {
     display: inline-block; font-size: 13px; color: var(--accent);
@@ -96,4 +133,48 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
   .keybox { border-left: 4px solid var(--accent); background: #eff6ff; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 15px; }
   .keybox strong { color: #1d4ed8; }
   .warnbox { border-left: 4px solid #f59e0b; background: #fffbeb; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 15px; }
+
+  /* 夜间模式组件覆盖（硬编码浅色背景需单独适配） */
+  :root[data-theme="dark"] .site-header { background: rgba(13,17,23,0.9); }
+  :root[data-theme="dark"] .sd-anim { background: #161b22; }
+  :root[data-theme="dark"] .fig { background: #161b22; }
+  :root[data-theme="dark"] .prose th { background: #161b22; }
+  :root[data-theme="dark"] .series-tag { background: rgba(88,166,255,0.12); }
+  :root[data-theme="dark"] .keybox { background: #11233f; }
+  :root[data-theme="dark"] .warnbox { background: #3a2e0c; }
+  :root[data-theme="dark"] .sd-tok { background: #21262d; }
+  :root[data-theme="dark"] .sd-ok { background: #11271f; border-color: #10b981; color: #6ee7b7; }
+  :root[data-theme="dark"] .sd-rej { background: #2a1416; border-color: #ef4444; color: #fca5a5; }
+  :root[data-theme="dark"] .cmp-table.diff-on tr.diff td { background: #2e2410; }
+  :root[data-theme="dark"] .post-list li { background: #0d1117; }
+  :root[data-theme="dark"] .post-list li:hover { background: #161b22; }
+
+  /* 互动模块：点赞 + 打赏 */
+  .engage { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; }
+  .like-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 18px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--bg); color: var(--fg); cursor: pointer; font-size: 15px;
+    transition: transform .15s ease, border-color .2s ease, color .2s ease;
+  }
+  .like-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .like-btn.liked { color: var(--accent); border-color: var(--accent); }
+  .like-btn.pop { animation: like-pop .35s ease; }
+  @keyframes like-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .like-ico { font-size: 17px; }
+  .like-count { font-variant-numeric: tabular-nums; min-width: 1.2em; }
+  .engage-tip { color: var(--muted); font-size: 14px; margin: 14px 0 18px; }
+  .reward { display: flex; gap: 24px; justify-content: center; }
+  .reward-col { text-align: center; }
+  .reward-qr {
+    width: 120px; height: 120px; border: 1px dashed var(--border); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; color: var(--muted);
+    font-size: 13px; background: var(--code-bg);
+  }
+  .reward-col p { margin: 8px 0 0; font-size: 14px; color: var(--fg); }
+  .reward-note { color: var(--muted); font-size: 12px; margin-top: 16px; }
 </style>
