@@ -12,6 +12,8 @@ const {
   altHref,
   lang = 'zh',
 } = frontmatter;
+const base = import.meta.env.BASE_URL;
+const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
 ---
 
 <!doctype html>
@@ -40,32 +42,66 @@ const {
       {series && <span class="series-tag">系列：{series}</span>}
       <h1>{title}</h1>
       {pubDate && <time datetime={pubDate}>{pubDate}</time>}
-      <article class="prose">
+      <article class="prose" id="post-content">
         <slot />
       </article>
 
       <section class="engage">
-        <button id="like-btn" class="like-btn" type="button" aria-pressed="false">
-          <span class="like-ico">👍</span>
-          <span class="like-label">点赞</span>
-          <span id="like-count" class="like-count">0</span>
-        </button>
-        <p class="engage-tip">觉得有用？欢迎点赞，或请我喝杯咖啡 ☕</p>
+        <div class="engage-actions">
+          <button id="like-btn" class="like-btn" type="button" aria-pressed="false">
+            <span class="like-ico">👍</span>
+            <span class="like-label">点赞</span>
+            <span id="like-count" class="like-count">0</span>
+          </button>
+          <button id="bookmark-btn" class="bookmark-btn" type="button" aria-pressed="false">
+            <span class="bookmark-ico">🔖</span>
+            <span id="bookmark-label" class="bookmark-label">收藏</span>
+          </button>
+        </div>
+        <p class="engage-tip">觉得有用？欢迎点赞、收藏，或请我喝杯咖啡 ☕</p>
         <div class="reward">
           <div class="reward-col">
-            <div class="reward-qr">支付宝收款码</div>
+            <div class="reward-qr">
+              <img src={`${base}reward/alipay.png`} alt="支付宝收款码" loading="lazy" />
+            </div>
             <p>支付宝</p>
           </div>
           <div class="reward-col">
-            <div class="reward-qr">微信收款码</div>
+            <div class="reward-qr">
+              <img src={`${base}reward/wechat.png`} alt="微信收款码" loading="lazy" />
+            </div>
             <p>微信</p>
           </div>
         </div>
-        <p class="reward-note">打赏二维码待上传：把支付宝 / 微信收款码图片放到 <code>public/reward/alipay.png</code> 与 <code>public/reward/wechat.png</code>，再把上方占位 <code>div.reward-qr</code> 换成 <code>&lt;img&gt;</code> 即可。</p>
+      </section>
+
+      <section class="comments" aria-label="评论">
+        <h2 id="comments">💬 留言</h2>
+        <div class="giscus-hint">
+          评论由 <a href="https://giscus.app" target="_blank" rel="noopener noreferrer">Giscus</a> 驱动（基于 GitHub Discussions）。
+          若评论区未显示，请先完成两步配置：① 在仓库 <code>NaphJohn/LLM-blog</code> 启用 Discussions；② 访问 giscus.app 获取 <code>data-repo-id</code> 与 <code>data-category-id</code>，填入本页脚本对应属性。
+        </div>
+        <div class="giscus"></div>
+        <script src="https://giscus.app/client.js"
+                data-repo="NaphJohn/LLM-blog"
+                data-repo-id="YOUR_REPO_ID"
+                data-category="Announcements"
+                data-category-id="YOUR_CATEGORY_ID"
+                data-mapping="pathname"
+                data-strict="0"
+                data-reactions-enabled="1"
+                data-emit-metadata="0"
+                data-input-position="bottom"
+                data-theme="preferred_color_scheme"
+                data-lang={giscusLang}
+                crossorigin="anonymous"
+                async>
+        </script>
       </section>
     </main>
 
     <script is:inline>
+      // 点赞
       (function () {
         var btn = document.getElementById('like-btn');
         if (!btn) return;
@@ -85,6 +121,172 @@ const {
           render();
           if (liked) { btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); }
         });
+      })();
+
+      // 收藏 / 书签
+      (function () {
+        var btn = document.getElementById('bookmark-btn');
+        if (!btn) return;
+        var label = document.getElementById('bookmark-label');
+        var key = 'blog-bookmarks';
+        var url = location.pathname;
+        function get() {
+          try { return JSON.parse(localStorage.getItem(key) || '[]'); }
+          catch (e) { return []; }
+        }
+        function isSaved() { return get().some(function (b) { return b.url === url; }); }
+        function render() {
+          var saved = isSaved();
+          btn.classList.toggle('saved', saved);
+          btn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+          if (label) label.textContent = saved ? '已收藏' : '收藏';
+          if (window.__renderBookmarks) window.__renderBookmarks();
+        }
+        btn.addEventListener('click', function () {
+          var list = get();
+          if (isSaved()) {
+            list = list.filter(function (b) { return b.url !== url; });
+          } else {
+            var h1 = document.querySelector('h1');
+            var title = h1 ? h1.textContent.trim() : document.title;
+            list.unshift({ url: url, title: title, lang: document.documentElement.lang || 'zh', added: Date.now() });
+          }
+          try { localStorage.setItem(key, JSON.stringify(list)); } catch (e) {}
+          render();
+        });
+        render();
+      })();
+
+      // 划线 / 下划线 / 清除高亮
+      (function () {
+        var article = document.getElementById('post-content');
+        if (!article) return;
+        var toolbar = document.getElementById('hl-toolbar');
+        var storageKey = 'blog-highlights:' + location.pathname;
+        var pendingRange = null;
+
+        function getSaved() {
+          try { return JSON.parse(localStorage.getItem(storageKey) || '[]'); }
+          catch (e) { return []; }
+        }
+        function save(list) {
+          try { localStorage.setItem(storageKey, JSON.stringify(list)); } catch (e) {}
+        }
+
+        function showToolbar(x, y) {
+          toolbar.hidden = false;
+          toolbar.style.left = x + 'px';
+          toolbar.style.top = Math.max(8, y - 8) + 'px';
+        }
+        function hideToolbar() {
+          toolbar.hidden = true;
+          pendingRange = null;
+        }
+
+        function getTextNodes(root) {
+          var nodes = [];
+          var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+          var n;
+          while ((n = walker.nextNode())) {
+            if (n.textContent.trim()) nodes.push(n);
+          }
+          return nodes;
+        }
+
+        function wrapNode(node, start, end, type) {
+          var text = node.textContent;
+          var before = text.slice(0, start);
+          var target = text.slice(start, end);
+          var after = text.slice(end);
+          var el = document.createElement(type === 'highlight' ? 'mark' : 'span');
+          el.className = type === 'highlight' ? 'user-hl' : 'user-ul';
+          el.textContent = target;
+          var frag = document.createDocumentFragment();
+          if (before) frag.appendChild(document.createTextNode(before));
+          frag.appendChild(el);
+          if (after) frag.appendChild(document.createTextNode(after));
+          node.parentNode.replaceChild(frag, node);
+          return el;
+        }
+
+        function applyHighlight(range, type) {
+          var text = range.toString().trim();
+          if (!text) return;
+          var sc = range.startContainer, so = range.startOffset;
+          var ec = range.endContainer, eo = range.endOffset;
+          if (sc === ec && sc.nodeType === 3) {
+            wrapNode(sc, so, eo, type);
+          } else {
+            var wrapper = document.createElement(type === 'highlight' ? 'mark' : 'span');
+            wrapper.className = type === 'highlight' ? 'user-hl' : 'user-ul';
+            try { wrapper.appendChild(range.extractContents()); }
+            catch (e) { return; }
+            range.insertNode(wrapper);
+          }
+          save(getSaved().concat({ text: text, type: type, created: Date.now() }));
+        }
+
+        function clearAll() {
+          article.querySelectorAll('.user-hl, .user-ul').forEach(function (el) {
+            var parent = el.parentNode;
+            while (el.firstChild) parent.insertBefore(el.firstChild, el);
+            parent.removeChild(el);
+            parent.normalize();
+          });
+          save([]);
+        }
+
+        function restore() {
+          var saved = getSaved();
+          if (!saved.length) return;
+          saved.forEach(function (item) {
+            var text = item.text;
+            var type = item.type;
+            var nodes = getTextNodes(article);
+            for (var i = 0; i < nodes.length; i++) {
+              var node = nodes[i];
+              var idx = node.textContent.indexOf(text);
+              if (idx >= 0) {
+                wrapNode(node, idx, idx + text.length, type);
+                break;
+              }
+            }
+          });
+        }
+
+        document.addEventListener('mouseup', function (e) {
+          // 忽略在工具栏上的点击
+          if (toolbar.contains(e.target)) return;
+          setTimeout(function () {
+            var sel = window.getSelection();
+            if (!sel.rangeCount || sel.isCollapsed) { hideToolbar(); return; }
+            var range = sel.getRangeAt(0);
+            var container = range.commonAncestorContainer;
+            if (container.nodeType === 3) container = container.parentElement;
+            if (!container.closest('article.prose')) { hideToolbar(); return; }
+            pendingRange = range.cloneRange();
+            var rect = range.getBoundingClientRect();
+            showToolbar(rect.left + rect.width / 2 + window.scrollX, rect.top + window.scrollY);
+          }, 10);
+        });
+
+        toolbar.addEventListener('click', function (e) {
+          var btn = e.target.closest('button');
+          if (!btn) return;
+          var type = btn.getAttribute('data-type');
+          if (type === 'clear') {
+            clearAll();
+            hideToolbar();
+            window.getSelection().removeAllRanges();
+            return;
+          }
+          if (!pendingRange) return;
+          applyHighlight(pendingRange, type);
+          hideToolbar();
+          window.getSelection().removeAllRanges();
+        });
+
+        restore();
       })();
     </script>
     <footer>© 2026 大模型技术notes · 托管于 GitHub Pages</footer>
