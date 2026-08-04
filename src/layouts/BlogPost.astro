@@ -97,6 +97,23 @@ const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
                 crossorigin="anonymous"
                 async>
         </script>
+        <script is:inline>
+          // Giscus 成功加载后，自动隐藏配置提示框
+          (function () {
+            var hint = document.querySelector('.giscus-hint');
+            if (!hint) return;
+            var tries = 0;
+            var iv = setInterval(function () {
+              tries++;
+              if (document.querySelector('iframe.giscus-frame')) {
+                hint.style.display = 'none';
+                clearInterval(iv);
+              } else if (tries > 40) {
+                clearInterval(iv); // 约 20s 仍未加载，说明配置缺失，保留提示
+              }
+            }, 500);
+          })();
+        </script>
       </section>
     </main>
 
