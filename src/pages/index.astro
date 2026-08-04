@@ -8,6 +8,7 @@ const spec = [
   { href: base + 'blog/ep3-dflash', title: 'DFlash 深度解析：块扩散起草 + KV 注入 + 无空转流水线', date: '2026-07-31' },
   { href: base + 'blog/ep4-dspark', title: 'DSpark 深度解析：半自回归起草 + 马尔可夫头 + 置信度调度', date: '2026-07-31' },
   { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
+  { href: base + 'blog/ep6-eagle3', title: 'EAGLE-3 深度解析：扔掉 feature 约束，让草稿模型第一次"吃数据"变快', date: '2026-08-04' },
 ];
 const mm = [
   { href: base + 'blog/mm1-foundations', title: '（一）基础与对齐范式：从"会写"到"会看会动"', date: '2026-07-31' },
@@ -49,7 +50,7 @@ const fw = [
       <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；四大系列（推测解码手记、多模态解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
-      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比。每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
       <ul class="post-list">
         {spec.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>

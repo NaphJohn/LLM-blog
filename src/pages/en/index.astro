@@ -8,6 +8,7 @@ const spec = [
   { href: base + 'en/blog/ep3-dflash', title: "DFlash Deep Dive: Block-Diffusion Drafting, KV Injection, and a Bubble-Free Pipeline", date: '2026-07-31' },
   { href: base + 'en/blog/ep4-dspark', title: "DSpark Deep Dive: Semi-Autoregressive Drafting with a Confidence Scheduler", date: '2026-07-31' },
   { href: base + 'en/blog/ep5-dflash-vs-dspark', title: 'Head-to-Head: Where DFlash and DSpark Actually Differ', date: '2026-07-31' },
+  { href: base + 'en/blog/ep6-eagle3', title: "EAGLE-3 Deep Dive: Drop the Feature Constraint, Let the Drafter Scale", date: '2026-08-04' },
 ];
 const mm = [
   { href: base + 'en/blog/mm1-foundations', title: '(1) Foundations & Alignment — from "Writing" to "Seeing & Acting"', date: '2026-07-31' },
@@ -49,7 +50,7 @@ const fw = [
       <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; four key series (Speculative Decoding Notes, Multimodal Decoding Notes, vLLM & SGLang Serving Notes, Emotional Intelligence Decoding Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
-      <p class="series-tag">Series · 5 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head. Each post has a Chinese counterpart.</p>
+      <p class="series-tag">Series · 6 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 deep dive (why the feature constraint is a scaling lock). Each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {spec.map((p) => (
           <li>
