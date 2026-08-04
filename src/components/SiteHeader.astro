@@ -302,6 +302,9 @@ const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
     padding: 5px; box-shadow: 0 4px 14px rgba(0,0,0,0.12);
     transform: translate(-50%, -115%); transition: opacity .15s;
   }
+  /* 关键修复：hidden 属性必须生效，否则作者样式的 display:flex 会覆盖 UA 的 [hidden]{display:none}，
+     导致工具栏在页面加载时就显示在左上角遮挡正文 */
+  .hl-toolbar[hidden] { display: none !important; }
   .hl-toolbar button { border: 1px solid var(--border); background: var(--code-bg); color: var(--fg); border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer; white-space: nowrap; }
   .hl-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
   :root[data-theme="dark"] .hl-toolbar { box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
