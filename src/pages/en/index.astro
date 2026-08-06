@@ -42,6 +42,12 @@ const vla = [
   { href: base + 'en/blog/vla4-china-players', title: '(4) Domestic Players — Ant Lingbo, Xiaomi, Tencent', date: '2026-08-04' },
   { href: base + 'en/blog/vla5-world-model', title: '(5) World Models and Deployment — VLA’s Next Stop', date: '2026-08-04' },
 ];
+const fa = [
+  { href: base + 'en/blog/fa1-overview', title: '(1) The 2026 Frontier Overview — the Impossible Triangle of Long-Context × Efficiency × Scale', date: '2026-08-06' },
+  { href: base + 'en/blog/fa2-kimi-k3', title: '(2) Kimi K3 — Dual Evolution of Attention and MoE', date: '2026-08-06' },
+  { href: base + 'en/blog/fa3-minimax-m3', title: '(3) MiniMax M2.7 → M3 — The Leap of Sparse Attention', date: '2026-08-06' },
+  { href: base + 'en/blog/fa4-deepseek-v4', title: '(4) DeepSeek V4 — Extreme Compression and Efficient Training', date: '2026-08-06' },
+];
 ---
 
 <!doctype html>
@@ -68,7 +74,7 @@ const vla = [
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; five key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM & SGLang Serving Notes, Emotional Intelligence Decoding Notes) are bilingual.</p>
+      <p class="lead">Notes on LLM tech, multimodality, and emotional-intelligence communication. Chinese-first; six key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM & SGLang Serving Notes, Emotional Intelligence Decoding Notes, Frontier Architecture Decoding Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 6 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 deep dive (why the feature constraint is a scaling lock). Each post has a Chinese counterpart.</p>
@@ -118,6 +124,17 @@ const vla = [
       <p class="series-tag">Series · 5 episodes, in order: from "see" to "act" (what VLA is) → the action engine (Diffusion Policy / Flow Matching / Action Chunking / low latency) → the π family (π0→π0.7) → domestic players (Ant Lingbo / Xiaomi / Tencent) → world models & deployment (data flywheel / scaling bottleneck / investment view). A natural extension of the LLaVA piece in Multimodal Decoding Notes (2) into the robot's "act" capability, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {vla.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2>Frontier Architecture Decoding Notes</h2>
+      <p class="series-tag">Series · 4 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%). The three "attention-reshape" controlled experiments strung into one arc: dense → sparse → compressed attention, all converging on MoE + 1M context, each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {fa.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>

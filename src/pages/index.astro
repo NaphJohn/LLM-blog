@@ -42,6 +42,12 @@ const vla = [
   { href: base + 'blog/vla4-china-players', title: '（四）国内重点玩家：蚂蚁灵波、小米、腾讯', date: '2026-08-04' },
   { href: base + 'blog/vla5-world-model', title: '（五）世界模型与落地：VLA 的下一站', date: '2026-08-04' },
 ];
+const fa = [
+  { href: base + 'blog/fa1-overview', title: '（一）2026 前沿大模型总览：长上下文 × 效率 × 规模化 的不可能三角', date: '2026-08-06' },
+  { href: base + 'blog/fa2-kimi-k3', title: '（二）Kimi K3：注意力与 MoE 的双重进化', date: '2026-08-06' },
+  { href: base + 'blog/fa3-minimax-m3', title: '（三）MiniMax M2.7 → M3：稀疏注意力的跨越', date: '2026-08-06' },
+  { href: base + 'blog/fa4-deepseek-v4', title: '（四）DeepSeek V4：极致压缩与高效训练', date: '2026-08-06' },
+];
 ---
 
 <!doctype html>
@@ -68,7 +74,7 @@ const vla = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；五大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；六大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记、前沿架构解码手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -106,6 +112,14 @@ const vla = [
       <p class="series-tag">系列 · 共 5 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
       <ul class="post-list">
         {vla.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>前沿架构解码手记</h2>
+      <p class="series-tag">系列 · 共 4 篇，循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）。把三家"改注意力"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力，最终收敛到 MoE + 1M 上下文，每篇附英文对照。</p>
+      <ul class="post-list">
+        {fa.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
