@@ -41,6 +41,7 @@ const vla = [
   { href: base + 'blog/vla3-pi-family', title: '（三）π 系列演进：Physical Intelligence 的 VLA 路线', date: '2026-08-04' },
   { href: base + 'blog/vla4-china-players', title: '（四）国内重点玩家：蚂蚁灵波、小米、腾讯', date: '2026-08-04' },
   { href: base + 'blog/vla5-world-model', title: '（五）世界模型与落地：VLA 的下一站', date: '2026-08-04' },
+  { href: base + 'blog/vla6-rt1-discrete-action', title: '（六）RT-1 的离散动作路线：TokenLearner、因果掩码与交叉熵', date: '2026-08-07' },
 ];
 const fa = [
   { href: base + 'blog/fa1-overview', title: '（一）2026 前沿大模型总览：长上下文 × 效率 × 规模化 的不可能三角', date: '2026-08-06' },
@@ -112,7 +113,7 @@ const op = [
       </ul>
 
       <h2>VLA 解码手记</h2>
-      <p class="series-tag">系列 · 共 5 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 6 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
       <ul class="post-list">
         {vla.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
