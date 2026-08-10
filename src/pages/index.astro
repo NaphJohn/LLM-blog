@@ -17,14 +17,6 @@ const mm = [
   { href: base + 'blog/mm4-vla-world-model', title: '（四）从 VLA 到世界模型：RT-2 → π0.7 → HiF-VLA', date: '2026-07-31' },
   { href: base + 'blog/mm5-efficiency-frontier', title: '（五）高效系统与前沿推理：注意力 / 推理优化 / 端侧 / RL', date: '2026-07-31' },
 ];
-const eq = [
-  { href: base + 'blog/eq1-self-awareness', title: '（一）自我觉察与内在框架：先搞定自己，再谈关系', date: '2026-08-01' },
-  { href: base + 'blog/eq2-attraction', title: '（二）吸引力与初识：吸引力不是天赋，是可习得的行为模式', date: '2026-08-01' },
-  { href: base + 'blog/eq3-gender-differences', title: '（三）两性沟通差异：冲突不是谁对谁错，是规则不同', date: '2026-08-01' },
-  { href: base + 'blog/eq4-nvc-crucial', title: '（四）非暴力沟通与关键对话：把冲突变成共识', date: '2026-08-01' },
-  { href: base + 'blog/eq5-win-favor', title: '（五）赢得好感与深度连接：让人"跟你在一起变得更好"', date: '2026-08-01' },
-  { href: base + 'blog/eq6-influence-relationship', title: '（六）影响力与长期关系经营：用真诚被更好地接收', date: '2026-08-01' },
-];
 const fw = [
   { href: base + 'blog/fw1-why-inference-engine', title: '（一）为什么需要推理引擎：朴素推理的三道墙', date: '2026-08-01' },
   { href: base + 'blog/fw2-vllm-internals', title: '（二）vLLM 原理：从分页 KV 到 Model Runner V2', date: '2026-08-01' },
@@ -78,7 +70,7 @@ const op = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态与情商沟通的实战知识笔记。本站以中文为主；七大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、情商解码手记、前沿架构解码手记、算子讲解手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；六大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记）均提供中英对照。原「情商解码手记」6 篇已整体迁移至新站 <a href="https://naphjohn.github.io/love-blog/">心动解码 · 情商恋爱博客</a>。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -104,13 +96,8 @@ const op = [
         ))}
       </ul>
 
-      <h2>情商解码手记</h2>
-      <p class="series-tag">系列 · 共 6 篇，循序渐进：从自我觉察与内在框架 → 吸引力与初识 → 两性沟通差异 → 非暴力沟通与关键对话 → 赢得好感与深度连接 → 影响力与长期关系经营。把情商两性邮件里沉淀的知识蒸馏成一条"搞定自己、被真诚看见、懂差异、化冲突、深连接、长经营"的学习主线，每篇附英文对照。</p>
-      <ul class="post-list">
-        {eq.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
+      <h2>情商解码手记 · 已迁移</h2>
+      <p class="series-tag">该系列（6 篇：自我觉察 → 吸引力 → 两性沟通差异 → 非暴力沟通 → 赢得好感 → 长期关系经营）已整体迁移至新站 <a href="https://naphjohn.github.io/love-blog/">心动解码 · 情商恋爱博客</a>，含中英对照；前 3 篇免费，后 3 篇为「请作者喝咖啡」软付费章节。</p>
 
       <h2>VLA 解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
