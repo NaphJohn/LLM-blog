@@ -26,6 +26,7 @@ const fw = [
   { href: base + 'blog/fw6-model-support-selection', title: '（六）支持的模型与选型指南：什么场景该选谁', date: '2026-08-01' },
   { href: base + 'blog/fw7-cuda-graph', title: '（七）图模式：CUDA Graph 原理与 vLLM / SGLang 的实现', date: '2026-08-04' },
   { href: base + 'blog/fw8-v1-v2-kunlun', title: '（八）vLLM 0.25.1 的两层 V1/V2 与 vLLM-Kunlun 的落点', date: '2026-08-05' },
+  { href: base + 'blog/fw9-wan22-vllm-omni', title: '（九）Wan2.2-I2V/T2V-A14B：双专家 MoE 视频模型与 vllm-omni 引擎剖析', date: '2026-08-11' },
 ];
 const vla = [
   { href: base + 'blog/vla1-basics', title: '（一）从「看懂」到「动手」：什么是视觉-语言-动作模型', date: '2026-08-04' },
@@ -89,7 +90,7 @@ const op = [
       </ul>
 
       <h2>vLLM 与 SGLang 框架解码手记</h2>
-      <p class="series-tag">系列 · 共 7 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南 → 图模式（CUDA Graph）。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 9 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南 → 图模式（CUDA Graph）→ vLLM-Kunlun 落点 → Wan2.2 双专家 MoE 与 vllm-omni 引擎剖析。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
       <ul class="post-list">
         {fw.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
