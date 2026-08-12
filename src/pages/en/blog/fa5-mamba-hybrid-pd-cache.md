@@ -15,6 +15,57 @@ The first four posts (overview → Kimi K3 → MiniMax M3 → DeepSeek V4) cover
 
 That yields a class of "hybrid architectures": Attention layers interleaved with Mamba layers (classically Jamba, one Attention layer per eight Mamba layers). When the architecture changes, **the "state" you must maintain at serving / inference time changes too** — and that is exactly where engineering footguns hide and get ignored. This post takes it apart.
 
+<figure class="arch-fig">
+<svg viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="State transfer and silent mis-hit risk for hybrid models under PD disaggregation">
+  <defs>
+    <marker id="arrowEn" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#8B4513"/>
+    </marker>
+    <style>
+      .box{fill:#fff7ed;stroke:#c2410c;stroke-width:1.5}
+      .box2{fill:#eff6ff;stroke:#1d4ed8;stroke-width:1.5}
+      .gate{fill:#fef9c3;stroke:#a16207;stroke-width:1.5}
+      .lab{font:600 13px -apple-system,'PingFang SC',sans-serif;fill:#1f2937}
+      .sub{font:11px -apple-system,'PingFang SC',sans-serif;fill:#475569}
+      .warn{font:600 11px -apple-system,'PingFang SC',sans-serif;fill:#b91c1c}
+      .conn{font:10px -apple-system,'PingFang SC',sans-serif;fill:#6b7280}
+    </style>
+  </defs>
+
+  <rect class="box" x="20" y="50" width="190" height="150" rx="8"/>
+  <text class="lab" x="115" y="74" text-anchor="middle">Prefill node</text>
+  <text class="sub" x="115" y="98" text-anchor="middle">produces "hybrid state"</text>
+  <line x1="40" y1="112" x2="190" y2="112" stroke="#c2410c" stroke-dasharray="3 3"/>
+  <text class="sub" x="115" y="132" text-anchor="middle">① KV cache</text>
+  <text class="sub" x="115" y="148" text-anchor="middle">(token-id keyed)</text>
+  <text class="sub" x="115" y="172" text-anchor="middle">② Mamba SSM state</text>
+  <text class="sub" x="115" y="188" text-anchor="middle">(fixed-size, no token-id key)</text>
+
+  <rect class="gate" x="250" y="95" width="180" height="60" rx="8"/>
+  <text class="lab" x="340" y="118" text-anchor="middle">RDMA / Mooncake</text>
+  <text class="sub" x="340" y="138" text-anchor="middle">raw bytes: ptr+index×item_len</text>
+  <line x1="210" y1="125" x2="248" y2="125" stroke="#8B4513" stroke-width="2" marker-end="url(#arrowEn)"/>
+  <line x1="432" y1="125" x2="470" y2="125" stroke="#8B4513" stroke-width="2" marker-end="url(#arrowEn)"/>
+
+  <rect class="box2" x="470" y="50" width="190" height="150" rx="8"/>
+  <text class="lab" x="565" y="74" text-anchor="middle">Decode node</text>
+  <text class="sub" x="565" y="98" text-anchor="middle">consumes hybrid state</text>
+  <text class="sub" x="565" y="132" text-anchor="middle">autoregressive by token</text>
+  <text class="sub" x="565" y="148" text-anchor="middle">generate next segment</text>
+  <text class="sub" x="565" y="172" text-anchor="middle">if state misplaced →</text>
+  <text class="warn" x="565" y="188" text-anchor="middle">silent wrong output</text>
+
+  <rect class="gate" x="250" y="252" width="380" height="70" rx="8"/>
+  <text class="lab" x="440" y="276" text-anchor="middle">Cache-correctness guard (absence ⇒ silent mis-hit)</text>
+  <text class="sub" x="440" y="298" text-anchor="middle">fingerprint (layer+req id+step+prefix hash)</text>
+  <text class="sub" x="440" y="314" text-anchor="middle">version / sequence no · connector-level state-id (route by id, not position)</text>
+
+  <text class="conn" x="340" y="240" text-anchor="middle">↓ must do virtual→physical id translation at handoff; forbid compaction while transfer in flight</text>
+  <path d="M340,155 C340,200 340,212 340,252" fill="none" stroke="#a16207" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowEn)"/>
+</svg>
+<figcaption>Fig: Under PD disaggregation, a hybrid model must carry the bundle "KV cache + Mamba SSM state" across nodes. The SSM state has no token-id key; once misplaced / aliased / read stale in routing, the Decode side "thinks it hit" but gets wrong history, and the error silently accumulates along the sequence — no error thrown. The guard = give both state types a fingerprint / version / state-id so mis-hits become observable.</figcaption>
+</figure>
+
 ## 1. What "Mamba Hybrid State" Means
 
 In a hybrid model, the "memory" needed to advance the sequence comes from two streams:

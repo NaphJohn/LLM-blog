@@ -15,6 +15,57 @@ layout: ../../layouts/BlogPost.astro
 
 于是出现一类"混合架构"：Attention 层 + Mamba 层交织（典型如 Jamba，每 8 层 Mamba 插 1 层 Attention）。架构变了，**部署 / 推理时要维护的"状态"也跟着变了**——这恰恰是工程上最容易踩坑、也最容易被忽略的点。本篇就把它讲透。
 
+<figure class="arch-fig">
+<svg viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="PD 分离下混合模型的状态搬运与静默命中错位风险">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#8B4513"/>
+    </marker>
+    <style>
+      .box{fill:#fff7ed;stroke:#c2410c;stroke-width:1.5}
+      .box2{fill:#eff6ff;stroke:#1d4ed8;stroke-width:1.5}
+      .gate{fill:#fef9c3;stroke:#a16207;stroke-width:1.5}
+      .lab{font:600 13px -apple-system,'PingFang SC',sans-serif;fill:#1f2937}
+      .sub{font:11px -apple-system,'PingFang SC',sans-serif;fill:#475569}
+      .warn{font:600 11px -apple-system,'PingFang SC',sans-serif;fill:#b91c1c}
+      .conn{font:10px -apple-system,'PingFang SC',sans-serif;fill:#6b7280}
+    </style>
+  </defs>
+
+  <rect class="box" x="20" y="50" width="190" height="150" rx="8"/>
+  <text class="lab" x="115" y="74" text-anchor="middle">Prefill 节点</text>
+  <text class="sub" x="115" y="98" text-anchor="middle">产出「混合状态」</text>
+  <line x1="40" y1="112" x2="190" y2="112" stroke="#c2410c" stroke-dasharray="3 3"/>
+  <text class="sub" x="115" y="132" text-anchor="middle">① KV Cache</text>
+  <text class="sub" x="115" y="148" text-anchor="middle">（token-id 寻址·有 key）</text>
+  <text class="sub" x="115" y="172" text-anchor="middle">② Mamba SSM 状态</text>
+  <text class="sub" x="115" y="188" text-anchor="middle">（定长·无 token-id key）</text>
+
+  <rect class="gate" x="250" y="95" width="180" height="60" rx="8"/>
+  <text class="lab" x="340" y="118" text-anchor="middle">RDMA / Mooncake</text>
+  <text class="sub" x="340" y="138" text-anchor="middle">按 ptr+index×item_len 裸字节</text>
+  <line x1="210" y1="125" x2="248" y2="125" stroke="#8B4513" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="432" y1="125" x2="470" y2="125" stroke="#8B4513" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect class="box2" x="470" y="50" width="190" height="150" rx="8"/>
+  <text class="lab" x="565" y="74" text-anchor="middle">Decode 节点</text>
+  <text class="sub" x="565" y="98" text-anchor="middle">消费混合状态</text>
+  <text class="sub" x="565" y="132" text-anchor="middle">按 token 自回归</text>
+  <text class="sub" x="565" y="148" text-anchor="middle">生成下一段</text>
+  <text class="sub" x="565" y="172" text-anchor="middle">若状态错位 →</text>
+  <text class="warn" x="565" y="188" text-anchor="middle">静默吐错·不报错</text>
+
+  <rect class="gate" x="250" y="252" width="380" height="70" rx="8"/>
+  <text class="lab" x="440" y="276" text-anchor="middle">缓存正确性护栏（缺则静默命中错位）</text>
+  <text class="sub" x="440" y="298" text-anchor="middle">指纹 fingerprint（层+请求id+步号+前缀哈希）</text>
+  <text class="sub" x="440" y="314" text-anchor="middle">版本号 / 序列号 · connector 级 state-id（按 id 而非位置投递）</text>
+
+  <text class="conn" x="340" y="240" text-anchor="middle">↓ 必须在交接点做 虚拟id→物理id 翻译；压缩时禁止在传输在飞时搬页</text>
+  <path d="M340,155 C340,200 340,212 340,252" fill="none" stroke="#a16207" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow)"/>
+</svg>
+<figcaption>图：PD 分离下，混合模型要把「KV Cache + Mamba SSM 状态」整组跨节点搬运。SSM 状态没有 token-id 寻址键，一旦在路由中被错放 / 串号 / 读到陈旧块，Decode 侧“以为命中”却拿到错误历史，错误沿序列静默累积——不报错。护栏 = 给两类状态都打指纹 / 版本号 / state-id，使错位从“静默”变“可发现”。</figcaption>
+</figure>
+
 ## 1. 什么是"Mamba 混合状态"
 
 在混合模型里，序列向前推进所需的"记忆"由两路组成：
