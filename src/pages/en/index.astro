@@ -44,6 +44,14 @@ const fa = [
 const op = [
   { href: base + 'en/blog/op1-mla-operator', title: '(1) MLA Operator-Level — c_kv / W_DKV / W_UK / W_UV Line-by-Line Pseudocode', date: '2026-08-07' },
 ];
+const pp = [
+  { href: base + 'en/blog/pp1-transformer', title: '(1) Transformer Deep Read — Replacing Recurrence with Attention, Making Sequence Modeling Parallel', date: '2026-08-12' },
+  { href: base + 'en/blog/pp2-diffusion-policy', title: '(2) Diffusion Policy Deep Read — Porting Stable Diffusion’s Denoising to Robot Action Generation', date: '2026-08-12' },
+];
+const tr = [
+  { href: base + 'en/blog/tr1-vllm-sglang-20260806', title: 'vLLM & SGLang Community Tracker · 2026-08-06 — Both Frameworks Land Ling-3.0-flash Same Day; Step Stalls', date: '2026-08-12' },
+  { href: base + 'en/blog/tr2-vllm-sglang-20260807', title: 'vLLM & SGLang Community Tracker · 2026-08-07 — KV Reuse Enters "Combinatorial Correctness" (HiCache / Mooncake)', date: '2026-08-12' },
+];
 ---
 
 <!doctype html>
@@ -70,7 +78,7 @@ const op = [
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; six key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Operator Notes) are bilingual.</p>
+      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; eight key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 6 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 deep dive (why the feature constraint is a scaling lock). Each post has a Chinese counterpart.</p>
@@ -131,6 +139,28 @@ const op = [
       <p class="series-tag">Series · 1 episode (opening). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {op.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2>Paper Primer Notes</h2>
+      <p class="series-tag">Series · 2 episodes (opening). Readable notes on the "classic papers" no one in the LLM era can avoid: from Transformer (2017), which defined attention, to Diffusion Policy (2023), which ports the diffusion-denoising paradigm into robot action generation. Complements the "action engine" in VLA Notes and the engineering series; each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {pp.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2>Community Tracker Notes</h2>
+      <p class="series-tag">Series · 1 episode (opening). Daily vLLM / SGLang upstream commits, model cookbooks, and domestic-model enablement progress, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {tr.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>

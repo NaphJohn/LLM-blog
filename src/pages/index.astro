@@ -45,6 +45,14 @@ const fa = [
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
 ];
+const pp = [
+  { href: base + 'blog/pp1-transformer', title: '（一）Transformer 精读：用「注意力」取代循环，把序列建模变成可并行计算', date: '2026-08-12' },
+  { href: base + 'blog/pp2-diffusion-policy', title: '（二）Diffusion Policy 精读：把 Stable Diffusion 的「去噪」范式搬去生成机器人动作', date: '2026-08-12' },
+];
+const tr = [
+  { href: base + 'blog/tr1-vllm-sglang-20260806', title: 'vLLM & SGLang 社区跟踪 · 2026-08-06：双框架同日落地 Ling-3.0-flash，阶跃 Step 适配停滞', date: '2026-08-12' },
+  { href: base + 'blog/tr2-vllm-sglang-20260807', title: 'vLLM & SGLang 社区跟踪 · 2026-08-07：KV 缓存复用进入「组合正确性」阶段（HiCache / Mooncake 原理与架构）', date: '2026-08-12' },
+];
 ---
 
 <!doctype html>
@@ -71,7 +79,7 @@ const op = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；六大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；八大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记、论文科普手记、社区跟踪手记）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -117,6 +125,22 @@ const op = [
       <p class="series-tag">系列 · 共 1 篇（开篇）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
       <ul class="post-list">
         {op.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>论文科普手记</h2>
+      <p class="series-tag">系列 · 共 2 篇（开篇）。把大模型时代绕不开的「经典论文」写成可读笔记：从定义注意力的 Transformer（2017）→ 把扩散去噪范式搬进机器人动作生成的 Diffusion Policy（2023）。与「VLA 解码手记」的动作生成发动机、本博客各工程系列互为补充，每篇附英文对照。</p>
+      <ul class="post-list">
+        {pp.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>社区跟踪手记</h2>
+      <p class="series-tag">系列 · 共 1 篇（开篇）。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
+      <ul class="post-list">
+        {tr.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
