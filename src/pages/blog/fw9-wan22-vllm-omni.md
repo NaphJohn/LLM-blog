@@ -20,6 +20,10 @@ I2V（图生视频）与 T2V（文生视频）共用这套骨架，区别只在�
 
 ## 二、Wan2.2-I2V-A14B 模型架构
 
+> **模型架构与数据流总览**（参考图 → 20 通道 condition、噪声 latent、UMT5-xxl 文本编码、双专家 DiT 在 boundary_timestep 切换与 CFG 调度、40 步 UniPC flow matching、VAE 解码 → 81 帧 h264 mp4）：
+>
+> <img src="/wan22_i2v_arch.png" alt="Wan2.2-I2V-A14B 架构与数据流：双专家扩散 MoE（高/低噪声 DiT 各 14B，总参~28B，激活 14B），参考图经 VAE Encoder 编为 20 通道 condition（16 参考图 latent + 4 mask），初始噪声 latent 16 通道，两者每步拼接成 36 通道输入 DiT；prompt 经 UMT5-xxl text encoder（24 层 / d_model 4096）→ 4096 维 text embedding 通过 cross-attention 注入；DiT 每专家 3D RoPE self-attn + cross-attn + FFN，hidden 5120（40 头×128）；高噪声专家负责 t ≥ boundary_timestep（boundary_ratio=0.9，~1/4 步）CFG=3.5，低噪声专家负责 t < boundary_timestep（~3/4 步）CFG=2→3.5；40 步 UniPC flow matching 去噪后 VAE Decoder（slicing/tiling 省显存）→ 81 帧 832×480 RGB → mp4。T2V-A14B 差异：无 I2V 图像条件分支（DiT 输入 16ch 而非 36ch），boundary_ratio=0.875，flow_shift=12.0。" style="max-width:100%;border:1px solid #eaeaea;border-radius:8px;" />
+
 Diffusers 布局（`model_index.json` 的 `_class_name = WanImageToVideoPipeline`，`boundary_ratio: 0.9`），五个组件：
 
 | 组件 | 类 | 关键参数（权重实测 config） | 磁盘大小 |
