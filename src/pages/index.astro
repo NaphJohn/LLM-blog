@@ -41,6 +41,7 @@ const fa = [
   { href: base + 'blog/fa2-kimi-k3', title: '（二）Kimi K3：注意力与 MoE 的双重进化', date: '2026-08-06' },
   { href: base + 'blog/fa3-minimax-m3', title: '（三）MiniMax M2.7 → M3：稀疏注意力的跨越', date: '2026-08-06' },
   { href: base + 'blog/fa4-deepseek-v4', title: '（四）DeepSeek V4：极致压缩与高效训练', date: '2026-08-06' },
+  { href: base + 'blog/fa7-qwen38-arch', title: '（七）Qwen3.8 双 checkpoint 对比：稠密 27B vs 稀疏 Flash-Next（360GB 权重只为换 6B 激活）', date: '2026-08-28' },
 ];
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
@@ -57,7 +58,7 @@ const tr = [
 ---
 
 <!doctype html>
-<html lang="zh">
+<html lang="zh" style={`--bg-url:url('${base}24solar-bg.png')`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -75,6 +76,21 @@ const tr = [
     </script>
     <title>大模型技术notes</title>
     <meta name="description" content="大模型推理、训练与系统优化技术笔记，中文为主，关键系列提供中英对照。" />
+    <style is:global>
+      /* 二十四节气新中式插画全局背景 */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: var(--bg-url);
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+        opacity: 0.07;
+        z-index: -1;
+        pointer-events: none;
+      }
+    </style>
   </head>
   <body>
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
@@ -115,7 +131,7 @@ const tr = [
       </ul>
 
       <h2>前沿架构解码手记</h2>
-      <p class="series-tag">系列 · 共 4 篇，循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）。把三家"改注意力"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力，最终收敛到 MoE + 1M 上下文，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 5 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 稀疏 MoE 大容量，每篇附英文对照。</p>
       <ul class="post-list">
         {fa.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
