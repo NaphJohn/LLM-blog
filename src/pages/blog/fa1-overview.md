@@ -47,7 +47,57 @@ layout: ../../layouts/BlogPost.astro
 <strong>一句话：</strong>2026 前沿架构的竞争，不是"谁参数多"，而是"谁能把注意力改到既撑得起 1M 上下文、又不让 KV 与算力爆炸"。三家分别选了<strong>重设计 / 稀疏化 / 压缩</strong>三条路。
 </div>
 
-## 2. 三家路线速写
+## 2. 注意力改造谱系（速查）：SWA 混合模型是什么
+
+把 2026 年各家对注意力的"改造"摆成一条谱系，从"完全不改"到"彻底换范式"，方便后面每篇对号入座：
+
+| 改造类型 | 代表 | 核心做法 | 注意力复杂度 |
+|---|---|---|---|
+| 全注意力（Full Attention） | 标准 Transformer、MiniMax M2.7 | 每个 token attend 全部历史 | O(n²) |
+| 滑动窗口注意力（SWA） | Longformer / GPT-3 滑窗、早期 Gemma | 每个 token 只看窗口 w 内 | O(n·w) |
+| **SWA 混合模型** | **Step-3.5-Flash（3:1）、Mistral / Gemma 类** | **同时堆叠 Full Attention 层与 Sliding Window Attention 层** | O(n²) 局部 + O(n·w) 主体 |
+| 稀疏注意力（MSA） | MiniMax M3 | 学习/固定稀疏模式，只算重要对 | ≪ O(n²) |
+| 压缩注意力（CSA + HCA） | DeepSeek V4 | 把 KV 压成块 / 极致压缩 | O(n·c) |
+| 非注意力（Mamba / SSM） | Kimi K3（部分）、Jamba | 用状态空间替代注意力 | O(n) |
+
+> **SWA 混合模型（Sliding-Window-Attention Hybrid）**：指**同时包含 Full Attention 层和 Sliding Window Attention 层的混合注意力架构模型**。典型做法是把大部分层设为滑动窗口（把主体 KV 开销从 O(n²) 压到 O(n·w)），再每隔若干层插入少量 Full Attention 层，负责"长程信息跨窗口传播"——否则窗口外的信息永远传不进来、模型会"健忘"。Step-3.5-Flash 用的就是 **3:1**（每 3 层滑窗 + 1 层全注意），详见 [Fw6：模型支持与选型](../fw6-model-support-selection)。
+
+<div class="keybox">
+<strong>为什么要"混合"？</strong>纯 SWA 便宜但"健忘"（窗口外信息丢失，长程依赖断掉）；纯 Full Attention 信息全但贵。SWA 混合 = 用少量 Full Attention 层"打通"窗口之间的长程依赖，主体仍用 SWA 省钱——这是"性价比"与"记忆力"之间的折中，也是 2026 年很多中等规模模型的首选注意力配方。
+</div>
+
+<div class="fig">
+<svg viewBox="0 0 680 170" width="100%" role="img" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif">
+  <title>注意力改造谱系</title>
+  <desc>从全注意力到非注意力（Mamba）的复杂度谱系，SWA 混合模型位于滑窗与稀疏之间。</desc>
+  <text x="20" y="22" font-size="14" font-weight="500" fill="#412402">注意力改造谱系（复杂度由高到低）</text>
+  <line x1="40" y1="70" x2="640" y2="70" stroke="#C9C3B6" stroke-width="2"/>
+  <g font-size="11" text-anchor="middle">
+    <rect x="20" y="52" width="96" height="36" rx="6" fill="#FBE3E3" stroke="#C0492F" stroke-width="0.6"/>
+    <text x="68" y="70" fill="#7A2415">Full Attn</text>
+    <text x="68" y="84" fill="#7A2415" font-size="10">O(n²)</text>
+    <rect x="126" y="52" width="96" height="36" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.6"/>
+    <text x="174" y="70" fill="#0C447C">SWA</text>
+    <text x="174" y="84" fill="#0C447C" font-size="10">O(n·w)</text>
+    <rect x="232" y="48" width="100" height="44" rx="6" fill="#FFF3D6" stroke="#BA7517" stroke-width="1"/>
+    <text x="282" y="68" fill="#633806" font-weight="600">SWA 混合</text>
+    <text x="282" y="84" fill="#633806" font-size="10">Full+SWA 层</text>
+    <rect x="342" y="52" width="96" height="36" rx="6" fill="#EAF4EA" stroke="#2F7A35" stroke-width="0.6"/>
+    <text x="390" y="70" fill="#1C4A20">稀疏 MSA</text>
+    <text x="390" y="84" fill="#1C4A20" font-size="10">≪O(n²)</text>
+    <rect x="448" y="52" width="100" height="36" rx="6" fill="#EFEAF8" stroke="#534AB7" stroke-width="0.6"/>
+    <text x="498" y="70" fill="#26215C">压缩 CSA+HCA</text>
+    <text x="498" y="84" fill="#26215C" font-size="10">O(n·c)</text>
+    <rect x="558" y="52" width="104" height="36" rx="6" fill="#E8F0F0" stroke="#2C7A7B" stroke-width="0.6"/>
+    <text x="610" y="70" fill="#164B4B">Mamba/SSM</text>
+    <text x="610" y="84" fill="#164B4B" font-size="10">O(n)</text>
+  </g>
+  <text x="20" y="120" font-size="11" fill="#444441">箭头方向：注意力 KV / 算力成本递减，记忆与长程能力递减；SWA 混合在"省钱"与"不忘"之间取折中。</text>
+  <text x="20" y="150" font-size="11" fill="#444441">注：此谱系按"改造强度/成本"排列，非严格单调；具体模型常混合多种（如 V4 同时有 CSA/HCA + 滑窗兜底）。</text>
+</svg>
+</div>
+
+## 3. 三家路线速写
 
 | 模型 | 发布 | 核心抓手 | 上下文 | 参数量级 | 开放 |
 |---|---|---|---|---|---|
@@ -59,7 +109,7 @@ layout: ../../layouts/BlogPost.astro
 - **MiniMax M3**——"把注意力变稀疏"：在 M2.7（标准注意力、200K、纯文本、仅 API）基础上，换上 MiniMax Sparse Attention（MSA），1M 上下文下**每 token 算力只有 M2.7 的约 1/20**，prefill 快约 9×、decode 快约 15×；同时补齐原生多模态（文本+图像+视频）和 computer use，并开源权重。
 - **DeepSeek V4**——"把 KV 压到极致"：CSA（压缩稀疏注意力，4-token KV 块 + top-k）+ HCA（重度压缩注意力，128×）混合，外加 128-token 不压缩滑窗分支兜底；1M 上下文下**每 token 算力约 V3.2 的 27%、KV Cache 约 10%**；训练侧换上 Muon 优化器替代 AdamW，并用 OPD（On-Policy Distillation）蒸馏领域专家。
 
-## 3. 循序渐进路线图
+## 4. 循序渐进路线图
 
 本系列刻意按"注意力改造强度"由轻到重排：
 
@@ -69,7 +119,7 @@ layout: ../../layouts/BlogPost.astro
 
 这样读完，你会自然建立起一条主线：**稠密注意力 → 稀疏注意力 → 压缩注意力**，最终三家都收敛到"MoE + 1M 上下文"这一共同终点。
 
-## 4. 贯穿全系列的主线 & 投资视角
+## 5. 贯穿全系列的主线 & 投资视角
 
 三家的共同点远比差异重要：
 

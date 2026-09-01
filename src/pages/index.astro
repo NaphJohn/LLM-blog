@@ -55,6 +55,20 @@ const tr = [
   { href: base + 'blog/tr2-vllm-sglang-20260807', title: 'vLLM & SGLang 社区跟踪 · 2026-08-07：KV 缓存复用进入「组合正确性」阶段（HiCache / Mooncake 原理与架构）', date: '2026-08-12' },
   { href: base + 'blog/tr3-vllm-sglang-20260811', title: 'vLLM & SGLang 社区跟踪 · 2026-08-11：vLLM v0.27.0 一次性交付、SGLang 统一内存池三连修与 PD 分离打通', date: '2026-08-12' },
 ];
+const aihot = [
+  { href: base + 'blog/aihot-20260813', title: '每日AI热点 · 2026-08-13：投机解码开始「算账」——高并发下固定草稿数反亏 33%', date: '2026-08-13' },
+  { href: base + 'blog/aihot-20260818', title: '每日AI热点 · 2026-08-18：TensorCast 把 KV 迁移做成共享层，多轮 Agent median TTFT 最多砍 93.2%', date: '2026-08-18' },
+  { href: base + 'blog/aihot-20260819', title: '每日AI热点 · 2026-08-19：DFlash2 给草稿头装上「局部卷积 + 候选选择器」，投机解码从拼接受率转向拼草稿质量', date: '2026-08-19' },
+  { href: base + 'blog/aihot-20260821', title: '每日AI热点 · 2026-08-21：共享专家融合同日在 NVIDIA 与 AMD 两侧兑现，BS=1 吞吐 +14.98%', date: '2026-08-21' },
+  { href: base + 'blog/aihot-20260823', title: '每日AI热点 · 2026-08-23：SGLang v0.5.18 把启动时间砍到 35.6 秒，vLLM v0.28.0 进入 RC 带上 DFlash2', date: '2026-08-23' },
+  { href: base + 'blog/aihot-20260824', title: '每日AI热点 · 2026-08-24：MTP 投机解码首次跨进多模态（Nemotron VL），SGLang 静默一日', date: '2026-08-24' },
+  { href: base + 'blog/aihot-20260825', title: '每日AI热点 · 2026-08-25：vLLM 交出 4090D/H20 约 3× 解码内核，SGLang 把 DSpark 验证铺到四种量化', date: '2026-08-25' },
+  { href: base + 'blog/aihot-20260826', title: '每日AI热点 · 2026-08-26：自适应 DSpark 让 c=256 吞吐 +33.6%，Step 的 MTP 接受率从 97% 静默崩到 4%', date: '2026-08-26' },
+  { href: base + 'blog/aihot-20260827', title: '每日AI热点 · 2026-08-27：vLLM v0.28.0 发布（584 commits），K3 全栈推性能、DSV4 稀疏 MLA 端到端、DFlash2 进稳定版', date: '2026-08-27' },
+  { href: base + 'blog/aihot-20260828', title: '每日AI热点 · 2026-08-28：v0.28.0 之后主分支改了三个默认值，SGLang 重构 prefill 基座', date: '2026-08-28' },
+  { href: base + 'blog/aihot-20260829', title: '每日AI热点 · 2026-08-29：SGLang 把冷启动压到 35.6 秒（2.38×），vLLM v0.28.0 的三处破坏性变更', date: '2026-08-29' },
+  { href: base + 'blog/aihot-20260901', title: '每日AI热点 · 2026-09-01：SGLang 的 NVFP4 + FP8 lm_head 会把输出变成无限重复，且 v0.5.18 装不上修复', date: '2026-09-01' },
+];
 ---
 
 <!doctype html>
@@ -96,7 +110,7 @@ const tr = [
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；八大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记、论文科普手记、社区跟踪手记）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；九大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -155,9 +169,17 @@ const tr = [
       </ul>
 
       <h2>社区跟踪手记</h2>
-      <p class="series-tag">系列 · 共 1 篇（开篇）。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 3 篇。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
       <ul class="post-list">
         {tr.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>每日AI热点</h2>
+      <p class="series-tag">系列 · 共 12 篇（持续更新），把每天 vLLM / SGLang 上游、国产模型适配、投机解码与推理优化的一线进展，做成「同一天同框 / 谁在掉队」的时效笔记，补足框架解码手记偏原理、少时效的部分，每篇附英文对照。</p>
+      <ul class="post-list">
+        {aihot.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>

@@ -32,7 +32,7 @@
 
 ## 2. 系列总览（Series Map）
 
-循序渐进 7 篇（第 7 篇可选），每篇中英各一版：
+循序渐进 8 篇（第 8 篇可选），每篇中英各一版：
 
 | # | 中文标题 | English Title | 主题 |
 |---|---|---|---|
@@ -42,7 +42,8 @@
 | 4 | DSpark：半自回归 + 置信度调度，让验证长度自适应 | DSpark: Semi-Autoregressive Drafting with Confidence-Aware Scheduling | DSpark 深度解析 |
 | 5 | 同台对比：DFlash 与 DSpark 到底差在哪 | Head-to-Head: Where DFlash and DSpark Actually Differ | 对比篇 |
 | 6 | 在 OpenInfer Qwen3-4B 上跑通 DFlash 与 DSpark | Benchmarking DFlash & DSpark on OpenInfer Qwen3-4B | 实测篇 |
-| 7（可选） | 动手训练一个 DFlash drafter | Training Your Own DFlash Drafter | 动手实践 |
+| 7 | MTP Head 与置信度头：三条自草稿路线串成链 | MTP Head & Confidence Head: One Chain Across Three Self-Drafting Routes | 结构收口 |
+| 8（可选） | 动手训练一个 DFlash drafter | Training Your Own DFlash Drafter | 动手实践 |
 
 ---
 
@@ -110,11 +111,20 @@
 - 6.5 组合策略（若叠加）
 - 6.6 结论 + 复现命令
 
-### Episode 7（可选）— 动手训练一个 DFlash drafter
-- 7.1 数据准备
-- 7.2 drafter 结构
-- 7.3 训练目标
-- 7.4 接入 OpenInfer / SGLang
+### Episode 7 — MTP Head 与置信度头：把推测解码三条自草稿路线串成一条链
+- 7.1 MTP Head 结构：训练期多令牌预测、推理作草稿头（已写 ep7-mtp-dspark.md）
+- 7.2 为什么 MTP 能当 Drafter：并行验证、接受最长前缀
+- 7.3 EAGLE-3 vs MTP：专门训练的 Draft Head vs 原生多令牌头
+- 7.4 DFlash：一次 forward 并行整块，代价是 suffix decay
+- 7.5 DSpark = DFlash backbone + Markov Head + Confidence Head
+- 7.6 Confidence Head：c_k = 条件接受概率 → a_j = ∏c_i（prefix survival）
+- 7.7 端到端流程图 + 四方法关系图 + 对比表
+
+### Episode 8（可选）— 动手训练一个 DFlash drafter
+- 8.1 数据准备
+- 8.2 drafter 结构
+- 8.3 训练目标
+- 8.4 接入 OpenInfer / SGLang
 
 ---
 
