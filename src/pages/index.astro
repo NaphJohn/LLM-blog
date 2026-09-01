@@ -102,6 +102,11 @@ const aihot = Object.entries(aihotMods)
         pointer-events: none;
       }
     </style>
+  <style>
+    .series-more { margin: 4px 0 0; font-size: 14px; }
+    .series-more a { color: var(--accent); text-decoration: none; }
+    .series-more a:hover { text-decoration: underline; }
+  </style>
   </head>
   <body>
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
@@ -176,10 +181,11 @@ const aihot = Object.entries(aihotMods)
       <h2>每日AI热点</h2>
       <p class="series-tag">系列 · 共 {aihot.length} 篇（持续更新），把每天 vLLM / SGLang 上游、国产模型适配、投机解码与推理优化的一线进展，做成「同一天同框 / 谁在掉队」的时效笔记，补足框架解码手记偏原理、少时效的部分，每篇附英文对照。</p>
       <ul class="post-list">
-        {aihot.map((p) => (
+        {aihot.slice(0, 1).map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
+      <p class="series-more"><a href={base + 'blog/aihot/'}>查看全部 {aihot.length} 期 →</a></p>
 
       <section class="engage">
         <p class="engage-tip">觉得这些技术笔记有用？欢迎请作者喝咖啡 ☕️</p>

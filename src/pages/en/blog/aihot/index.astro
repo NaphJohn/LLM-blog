@@ -1,0 +1,54 @@
+---
+import SiteHeader from '../../../../components/SiteHeader.astro';
+
+const base = import.meta.env.BASE_URL;
+const aihotMods = import.meta.glob('../aihot-*.md', { eager: true }) as Record<string, any>;
+const aihot = Object.entries(aihotMods)
+  .map(([key, mod]) => {
+    const slug = key.split('/').pop()!.replace('.md', '');
+    return {
+      href: base + 'en/blog/' + slug,
+      title: mod.frontmatter?.title ?? slug,
+      date: mod.frontmatter?.pubDate ?? '',
+    };
+  })
+  .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+    <title>Daily AI Hotspot Notes · All {aihot.length} Episodes</title>
+    <meta name="description" content="All Daily AI Hotspot Notes: front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, bilingual." />
+  </head>
+  <body>
+    <SiteHeader lang="en" altLang="zh" altHref="/blog/aihot/" />
+    <main>
+      <h1>Daily AI Hotspot Notes · All {aihot.length} Episodes</h1>
+      <p class="series-tag">Series · {aihot.length} episodes (ongoing). Front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, framed as "same-day same-frame / who is falling behind"; each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {aihot.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+    </main>
+    <footer>© 2026 LLM Tech Notes · Hosted on GitHub Pages</footer>
+  </body>
+</html>

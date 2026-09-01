@@ -85,6 +85,11 @@ const hot = Object.entries(hotMods)
     </script>
     <title>大模型技术notes · LLM Tech Notes</title>
     <meta name="description" content="Notes on LLM inference, training and systems optimization. Chinese-first, with key series bilingual." />
+  <style>
+    .series-more { margin: 4px 0 0; font-size: 14px; }
+    .series-more a { color: var(--accent); text-decoration: none; }
+    .series-more a:hover { text-decoration: underline; }
+  </style>
   </head>
   <body>
     <SiteHeader lang="en" altLang="zh" altHref="/" />
@@ -183,13 +188,14 @@ const hot = Object.entries(hotMods)
       <h2>Daily AI Hotspot Notes</h2>
       <p class="series-tag">Series · {hot.length} episodes (ongoing). Front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
       <ul class="post-list">
-        {hot.map((p) => (
+        {hot.slice(0, 1).map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>
           </li>
         ))}
       </ul>
+      <p class="series-more"><a href={base + 'en/blog/aihot/'}>View all {hot.length} episodes →</a></p>
 
       <section class="engage">
         <p class="engage-tip">Found these notes useful? Buy the author a coffee ☕️</p>
