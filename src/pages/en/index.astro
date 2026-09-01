@@ -53,20 +53,17 @@ const tr = [
   { href: base + 'en/blog/tr2-vllm-sglang-20260807', title: 'vLLM & SGLang Community Tracker · 2026-08-07 — KV Reuse Enters "Combinatorial Correctness" (HiCache / Mooncake)', date: '2026-08-12' },
   { href: base + 'en/blog/tr3-vllm-sglang-20260811', title: 'vLLM & SGLang Community Tracker · 2026-08-11 — vLLM v0.27.0 Ships in One Drop; SGLang Triple-Fixes Unified Pool & Wires PD', date: '2026-08-12' },
 ];
-const hot = [
-  { href: base + 'en/blog/aihot-20260813', title: "Daily AI Hotspot · 2026-08-13: Speculative Decoding Starts Doing the Math — Fixed Draft Count Loses 33% at High Concurrency", date: '2026-08-13' },
-  { href: base + 'en/blog/aihot-20260818', title: "Daily AI Hotspot · 2026-08-18: TensorCast Turns KV Migration Into a Shared Layer, Cutting Agent Median TTFT by Up to 93.2%", date: '2026-08-18' },
-  { href: base + 'en/blog/aihot-20260819', title: "Daily AI Hotspot · 2026-08-19: DFlash2 Gives the Draft Head a Local Conv and a Candidate Selector — Speculative Decoding Moves from Acceptance Rate to Draft Quality", date: '2026-08-19' },
-  { href: base + 'en/blog/aihot-20260821', title: "Daily AI Hotspot · 2026-08-21: Shared-Expert Fusion Lands on NVIDIA and AMD the Same Day, +14.98% Throughput at BS=1", date: '2026-08-21' },
-  { href: base + 'en/blog/aihot-20260823', title: "Daily AI Hotspot · 2026-08-23: SGLang v0.5.18 Cuts Startup to 35.6 Seconds, While vLLM v0.28.0 Enters RC with DFlash2", date: '2026-08-23' },
-  { href: base + 'en/blog/aihot-20260824', title: "Daily AI Hotspot · 2026-08-24: MTP Speculative Decoding Crosses Into Multimodal for the First Time (Nemotron VL); SGLang Quiet", date: '2026-08-24' },
-  { href: base + 'en/blog/aihot-20260825', title: "Daily AI Hotspot · 2026-08-25: vLLM Ships a ~3× Decode Kernel for 4090D/H20, SGLang Spreads DSpark Verification Across Four Quantization Tiers", date: '2026-08-25' },
-  { href: base + 'en/blog/aihot-20260826', title: "Daily AI Hotspot · 2026-08-26: Adaptive DSpark Delivers +33.6% Throughput at c=256, While Step's MTP Acceptance Rate Silently Collapses from 97% to 4%", date: '2026-08-26' },
-  { href: base + 'en/blog/aihot-20260827', title: "Daily AI Hotspot · 2026-08-27: vLLM v0.28.0 Ships (584 Commits) — Full-Stack Kimi-K3 Performance, End-to-End DeepSeek V4 Sparse MLA, DSpark Reaches Stable", date: '2026-08-27' },
-  { href: base + 'en/blog/aihot-20260828', title: "Daily AI Hotspot · 2026-08-28: Three Default Values Changed on main After v0.28.0, While SGLang Rebuilds Its Prefill Foundation", date: '2026-08-28' },
-  { href: base + 'en/blog/aihot-20260829', title: "Daily AI Hotspot · 2026-08-29: SGLang Cuts Cold Start to 35.6s (2.38×), and vLLM v0.28.0's Three Breaking Changes", date: '2026-08-29' },
-  { href: base + 'en/blog/aihot-20260901', title: "Daily AI Hotspot · 2026-09-01: SGLang Turns NVFP4 + FP8 lm_head Into Endless Repetition — And You Cannot Install the Fix on v0.5.18", date: '2026-09-01' },
-];
+const hotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
+const hot = Object.entries(hotMods)
+  .map(([key, mod]) => {
+    const slug = key.split('/').pop()!.replace('.md', '');
+    return {
+      href: base + 'en/blog/' + slug,
+      title: mod.frontmatter?.title ?? slug,
+      date: mod.frontmatter?.pubDate ?? '',
+    };
+  })
+  .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 ---
 
 <!doctype html>
@@ -184,7 +181,7 @@ const hot = [
       </ul>
 
       <h2>Daily AI Hotspot Notes</h2>
-      <p class="series-tag">Series · 12 episodes (ongoing). Front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
+      <p class="series-tag">Series · {hot.length} episodes (ongoing). Front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {hot.map((p) => (
           <li>
