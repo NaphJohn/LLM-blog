@@ -1,5 +1,6 @@
 ---
 import SiteHeader from '../../components/SiteHeader.astro';
+import TodayBadge from '../../components/TodayBadge.astro';
 
 const base = import.meta.env.BASE_URL;
 const spec = [
@@ -95,6 +96,7 @@ const hot = Object.entries(hotMods)
     <SiteHeader lang="en" altLang="zh" altHref="/" />
     <main>
       <h1>大模型技术notes</h1>
+      <TodayBadge lang="en" />
       <p class="lead">Notes on LLM tech and multimodality. Chinese-first; nine key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) are bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>

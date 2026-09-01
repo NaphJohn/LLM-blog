@@ -1,5 +1,6 @@
 ---
 import SiteHeader from '../components/SiteHeader.astro';
+import TodayBadge from '../components/TodayBadge.astro';
 
 const base = import.meta.env.BASE_URL;
 const spec = [
@@ -97,9 +98,13 @@ const aihot = Object.entries(aihotMods)
         background-size: cover;
         background-position: center top;
         background-repeat: no-repeat;
-        opacity: 0.07;
+        opacity: 0.13;
         z-index: -1;
         pointer-events: none;
+        transition: opacity .25s ease;
+      }
+      :root[data-theme="dark"] body::before {
+        opacity: 0.08;
       }
     </style>
   <style>
@@ -112,6 +117,7 @@ const aihot = Object.entries(aihotMods)
     <SiteHeader lang="zh" altLang="en" altHref="/en/" />
     <main>
       <h1>大模型技术notes</h1>
+      <TodayBadge />
       <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；九大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）均提供中英对照。</p>
 
       <h2>推测解码手记</h2>

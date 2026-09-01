@@ -1,0 +1,190 @@
+---
+const { lang = 'zh' } = Astro.props;
+
+const terms = [
+  // 2026
+  { zh: '小寒', en: 'Minor Cold', date: '2026-01-05' },
+  { zh: '大寒', en: 'Major Cold', date: '2026-01-20' },
+  { zh: '立春', en: 'Start of Spring', date: '2026-02-04' },
+  { zh: '雨水', en: 'Rain Water', date: '2026-02-18' },
+  { zh: '惊蛰', en: 'Awakening of Insects', date: '2026-03-05' },
+  { zh: '春分', en: 'Spring Equinox', date: '2026-03-20' },
+  { zh: '清明', en: 'Pure Brightness', date: '2026-04-05' },
+  { zh: '谷雨', en: 'Grain Rain', date: '2026-04-20' },
+  { zh: '立夏', en: 'Start of Summer', date: '2026-05-05' },
+  { zh: '小满', en: 'Grain Full', date: '2026-05-21' },
+  { zh: '芒种', en: 'Grain in Ear', date: '2026-06-05' },
+  { zh: '夏至', en: 'Summer Solstice', date: '2026-06-21' },
+  { zh: '小暑', en: 'Minor Heat', date: '2026-07-07' },
+  { zh: '大暑', en: 'Major Heat', date: '2026-07-23' },
+  { zh: '立秋', en: 'Start of Autumn', date: '2026-08-07' },
+  { zh: '处暑', en: 'End of Heat', date: '2026-08-23' },
+  { zh: '白露', en: 'White Dew', date: '2026-09-07' },
+  { zh: '秋分', en: 'Autumn Equinox', date: '2026-09-23' },
+  { zh: '寒露', en: 'Cold Dew', date: '2026-10-08' },
+  { zh: '霜降', en: "Frost's Descent", date: '2026-10-23' },
+  { zh: '立冬', en: 'Start of Winter', date: '2026-11-07' },
+  { zh: '小雪', en: 'Minor Snow', date: '2026-11-22' },
+  { zh: '大雪', en: 'Major Snow', date: '2026-12-07' },
+  { zh: '冬至', en: 'Winter Solstice', date: '2026-12-22' },
+  // 2027
+  { zh: '小寒', en: 'Minor Cold', date: '2027-01-05' },
+  { zh: '大寒', en: 'Major Cold', date: '2027-01-20' },
+  { zh: '立春', en: 'Start of Spring', date: '2027-02-04' },
+  { zh: '雨水', en: 'Rain Water', date: '2027-02-19' },
+  { zh: '惊蛰', en: 'Awakening of Insects', date: '2027-03-06' },
+  { zh: '春分', en: 'Spring Equinox', date: '2027-03-21' },
+  { zh: '清明', en: 'Pure Brightness', date: '2027-04-05' },
+  { zh: '谷雨', en: 'Grain Rain', date: '2027-04-20' },
+  { zh: '立夏', en: 'Start of Summer', date: '2027-05-06' },
+  { zh: '小满', en: 'Grain Full', date: '2027-05-21' },
+  { zh: '芒种', en: 'Grain in Ear', date: '2027-06-06' },
+  { zh: '夏至', en: 'Summer Solstice', date: '2027-06-21' },
+  { zh: '小暑', en: 'Minor Heat', date: '2027-07-07' },
+  { zh: '大暑', en: 'Major Heat', date: '2027-07-23' },
+  { zh: '立秋', en: 'Start of Autumn', date: '2027-08-08' },
+  { zh: '处暑', en: 'End of Heat', date: '2027-08-23' },
+  { zh: '白露', en: 'White Dew', date: '2027-09-08' },
+  { zh: '秋分', en: 'Autumn Equinox', date: '2027-09-23' },
+  { zh: '寒露', en: 'Cold Dew', date: '2027-10-08' },
+  { zh: '霜降', en: "Frost's Descent", date: '2027-10-23' },
+  { zh: '立冬', en: 'Start of Winter', date: '2027-11-07' },
+  { zh: '小雪', en: 'Minor Snow', date: '2027-11-22' },
+  { zh: '大雪', en: 'Major Snow', date: '2027-12-07' },
+  { zh: '冬至', en: 'Winter Solstice', date: '2027-12-22' }
+];
+
+function getTerm(dateStr: string) {
+  let current = terms[0];
+  for (const t of terms) {
+    if (dateStr >= t.date) current = t;
+    else break;
+  }
+  return current;
+}
+
+const now = new Date();
+const dateStr = now.toISOString().slice(0, 10);
+const term = getTerm(dateStr);
+const label = lang === 'en' ? 'Today' : '今日';
+const termName = lang === 'en' ? term.en : term.zh;
+const dateText = now.toLocaleDateString(lang === 'en' ? 'en-US' : 'zh-CN', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+const staticText = `${label} · ${termName} · ${dateText}`;
+---
+
+<div class="today-badge" data-lang={lang} aria-live="polite">
+  <span class="term-dot" aria-hidden="true"></span>
+  <span class="today-content">{staticText}</span>
+</div>
+
+<script is:inline>
+(function () {
+  var solarTerms = [
+    // 2026
+    { zh: '小寒', en: 'Minor Cold', date: '2026-01-05' },
+    { zh: '大寒', en: 'Major Cold', date: '2026-01-20' },
+    { zh: '立春', en: 'Start of Spring', date: '2026-02-04' },
+    { zh: '雨水', en: 'Rain Water', date: '2026-02-18' },
+    { zh: '惊蛰', en: 'Awakening of Insects', date: '2026-03-05' },
+    { zh: '春分', en: 'Spring Equinox', date: '2026-03-20' },
+    { zh: '清明', en: 'Pure Brightness', date: '2026-04-05' },
+    { zh: '谷雨', en: 'Grain Rain', date: '2026-04-20' },
+    { zh: '立夏', en: 'Start of Summer', date: '2026-05-05' },
+    { zh: '小满', en: 'Grain Full', date: '2026-05-21' },
+    { zh: '芒种', en: 'Grain in Ear', date: '2026-06-05' },
+    { zh: '夏至', en: 'Summer Solstice', date: '2026-06-21' },
+    { zh: '小暑', en: 'Minor Heat', date: '2026-07-07' },
+    { zh: '大暑', en: 'Major Heat', date: '2026-07-23' },
+    { zh: '立秋', en: 'Start of Autumn', date: '2026-08-07' },
+    { zh: '处暑', en: 'End of Heat', date: '2026-08-23' },
+    { zh: '白露', en: 'White Dew', date: '2026-09-07' },
+    { zh: '秋分', en: 'Autumn Equinox', date: '2026-09-23' },
+    { zh: '寒露', en: 'Cold Dew', date: '2026-10-08' },
+    { zh: '霜降', en: "Frost's Descent", date: '2026-10-23' },
+    { zh: '立冬', en: 'Start of Winter', date: '2026-11-07' },
+    { zh: '小雪', en: 'Minor Snow', date: '2026-11-22' },
+    { zh: '大雪', en: 'Major Snow', date: '2026-12-07' },
+    { zh: '冬至', en: 'Winter Solstice', date: '2026-12-22' },
+    // 2027
+    { zh: '小寒', en: 'Minor Cold', date: '2027-01-05' },
+    { zh: '大寒', en: 'Major Cold', date: '2027-01-20' },
+    { zh: '立春', en: 'Start of Spring', date: '2027-02-04' },
+    { zh: '雨水', en: 'Rain Water', date: '2027-02-19' },
+    { zh: '惊蛰', en: 'Awakening of Insects', date: '2027-03-06' },
+    { zh: '春分', en: 'Spring Equinox', date: '2027-03-21' },
+    { zh: '清明', en: 'Pure Brightness', date: '2027-04-05' },
+    { zh: '谷雨', en: 'Grain Rain', date: '2027-04-20' },
+    { zh: '立夏', en: 'Start of Summer', date: '2027-05-06' },
+    { zh: '小满', en: 'Grain Full', date: '2027-05-21' },
+    { zh: '芒种', en: 'Grain in Ear', date: '2027-06-06' },
+    { zh: '夏至', en: 'Summer Solstice', date: '2027-06-21' },
+    { zh: '小暑', en: 'Minor Heat', date: '2027-07-07' },
+    { zh: '大暑', en: 'Major Heat', date: '2027-07-23' },
+    { zh: '立秋', en: 'Start of Autumn', date: '2027-08-08' },
+    { zh: '处暑', en: 'End of Heat', date: '2027-08-23' },
+    { zh: '白露', en: 'White Dew', date: '2027-09-08' },
+    { zh: '秋分', en: 'Autumn Equinox', date: '2027-09-23' },
+    { zh: '寒露', en: 'Cold Dew', date: '2027-10-08' },
+    { zh: '霜降', en: "Frost's Descent", date: '2027-10-23' },
+    { zh: '立冬', en: 'Start of Winter', date: '2027-11-07' },
+    { zh: '小雪', en: 'Minor Snow', date: '2027-11-22' },
+    { zh: '大雪', en: 'Major Snow', date: '2027-12-07' },
+    { zh: '冬至', en: 'Winter Solstice', date: '2027-12-22' }
+  ];
+
+  function getCurrentTerm(dateStr) {
+    var current = solarTerms[0];
+    for (var i = 0; i < solarTerms.length; i++) {
+      if (dateStr >= solarTerms[i].date) {
+        current = solarTerms[i];
+      } else {
+        break;
+      }
+    }
+    return current;
+  }
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function isoDate(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function fmtDate(d, lang) {
+    if (lang === 'en') {
+      return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    return d.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+
+  var badge = document.querySelector('.today-badge');
+  if (!badge) return;
+  var lang = badge.dataset.lang || document.documentElement.lang || 'zh';
+  var today = new Date();
+  var term = getCurrentTerm(isoDate(today));
+  var label = lang === 'en' ? 'Today' : '今日';
+  var termName = lang === 'en' ? term.en : term.zh;
+  var text = label + ' · ' + termName + ' · ' + fmtDate(today, lang);
+  var content = badge.querySelector('.today-content');
+  if (content) content.textContent = text;
+})();
+</script>
+
+<style>
+  .today-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 18px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .term-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+</style>

@@ -45,9 +45,13 @@ const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
         background-size: cover;
         background-position: center top;
         background-repeat: no-repeat;
-        opacity: 0.07;
+        opacity: 0.13;
         z-index: -1;
         pointer-events: none;
+        transition: opacity .25s ease;
+      }
+      :root[data-theme="dark"] body::before {
+        opacity: 0.08;
       }
     </style>
   </head>
