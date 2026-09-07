@@ -56,6 +56,14 @@ const tr = [
   { href: base + 'blog/tr2-vllm-sglang-20260807', title: 'vLLM & SGLang 社区跟踪 · 2026-08-07：KV 缓存复用进入「组合正确性」阶段（HiCache / Mooncake 原理与架构）', date: '2026-08-12' },
   { href: base + 'blog/tr3-vllm-sglang-20260811', title: 'vLLM & SGLang 社区跟踪 · 2026-08-11：vLLM v0.27.0 一次性交付、SGLang 统一内存池三连修与 PD 分离打通', date: '2026-08-12' },
 ];
+const sys = [
+  { href: base + 'blog/sys1-pcie-numa-nic-hicache', title: '（一）P900 + HiCache 下的 NUMA × PCIe × NIC 数据链路', date: '2026-08-26' },
+  { href: base + 'blog/sys2-ring-attention', title: '（二）Sequence Parallelism + Ring Attention——把 1M+ Token 训成常态', date: '2026-08-26' },
+  { href: base + 'blog/sys3-attention-evolution', title: '（三）MSA / CSA / HCA —— 三种注意力改造路线一张图看清', date: '2026-08-26' },
+  { href: base + 'blog/sys4-knowledge-distillation', title: '（四）知识蒸馏 —— 把大模型的「暗知识」传给小模型', date: '2026-08-26' },
+  { href: base + 'blog/sys5-attention-evolution-kvcache', title: '（五）从 MHA 到 HiCache——KV Cache 压缩方向的演进全景', date: '2026-08-26' },
+  { href: base + 'blog/sys6-hisparse-hierarchical-kv-cache', title: '（六）HiSparse —— 把 HBM 当缓存用，长上下文服务的容量墙怎么拆', date: '2026-09-07' },
+];
 const aihotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const aihot = Object.entries(aihotMods)
   .map(([key, mod]) => {
@@ -118,7 +126,7 @@ const aihot = Object.entries(aihotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge />
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；九大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）均提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -140,6 +148,14 @@ const aihot = Object.entries(aihotMods)
       <p class="series-tag">系列 · 共 9 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南 → 图模式（CUDA Graph）→ vLLM-Kunlun 落点 → Wan2.2 双专家 MoE 与 vllm-omni 引擎剖析。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
       <ul class="post-list">
         {fw.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>推理系统基础设施手记</h2>
+      <p class="series-tag">系列 · 共 6 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
+      <ul class="post-list">
+        {sys.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
