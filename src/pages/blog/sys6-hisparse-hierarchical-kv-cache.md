@@ -111,6 +111,122 @@ HBM 占用 = N_ℓ × B × W_KV × s
 
 N_ℓ 是层数，W_KV 是每 token 的 KV 元素数，s 是每元素字节数。**L_ctx 消失了**——这就是"把解码吞吐与显存容量解耦"的实质。
 
+### 2.1 槽位到底怎么分（DRAM 与 HBM 的对应关系）
+
+<div class="arch-fig">
+<svg viewBox="0 0 680 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HiSparse 槽位分配：主机 DRAM 按 token 全量存放，GPU HBM 每个请求层一组 B 槽，页表做逻辑位置到物理槽的映射">
+  <defs>
+    <marker id="arAlloc" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#8B4513"/>
+    </marker>
+    <style>
+      .host{fill:#eff6ff;stroke:#1d4ed8;stroke-width:1.5}
+      .gpu{fill:#fff7ed;stroke:#c2410c;stroke-width:1.5}
+      .pt{fill:#f8fafc;stroke:#64748b;stroke-width:1.5}
+      .lab{font:600 13px -apple-system,'PingFang SC',sans-serif;fill:#1f2937}
+      .sub{font:11px -apple-system,'PingFang SC',sans-serif;fill:#475569}
+      .tiny{font:10px -apple-system,'PingFang SC',sans-serif;fill:#6b7280}
+      .cell{font:600 11px -apple-system,'PingFang SC',sans-serif;fill:#1f2937}
+      .victim{fill:#fee2e2;stroke:#dc2626;stroke-width:1.5}
+      .hot{fill:#dcfce7;stroke:#16a34a;stroke-width:1.2}
+      .slot{fill:#ffffff;stroke:#c2410c;stroke-width:1}
+      .kv{fill:#dbeafe;stroke:#2563eb;stroke-width:0.8}
+      .form{font:700 13px -apple-system,'PingFang SC',sans-serif;fill:#1f2937}
+    </style>
+  </defs>
+
+  <text x="20" y="24" class="lab">槽位分配：DRAM 按 token 全量存，HBM 按「请求 × 层」各给 B 槽</text>
+
+  <rect x="20" y="44" width="250" height="250" rx="10" class="host"/>
+  <text x="34" y="68" class="lab">① 主机 DRAM（权威全量副本）</text>
+  <text x="34" y="88" class="sub">request 0</text>
+  <g>
+    <rect x="95" y="76" width="13" height="18" class="kv"/><rect x="110" y="76" width="13" height="18" class="kv"/><rect x="125" y="76" width="13" height="18" class="kv"/><rect x="140" y="76" width="13" height="18" class="kv"/><rect x="155" y="76" width="13" height="18" class="kv"/><rect x="170" y="76" width="13" height="18" class="kv"/><rect x="185" y="76" width="13" height="18" class="kv"/><rect x="200" y="76" width="13" height="18" class="kv"/><rect x="215" y="76" width="13" height="18" class="kv"/><rect x="230" y="76" width="13" height="18" class="kv"/><rect x="245" y="76" width="13" height="18" class="kv"/><rect x="255" y="76" width="8" height="18" class="kv"/>
+  </g>
+  <text x="34" y="138" class="sub">request 1</text>
+  <g>
+    <rect x="95" y="126" width="13" height="18" class="kv"/><rect x="110" y="126" width="13" height="18" class="kv"/><rect x="125" y="126" width="13" height="18" class="kv"/><rect x="140" y="126" width="13" height="18" class="kv"/><rect x="155" y="126" width="13" height="18" class="kv"/><rect x="170" y="126" width="13" height="18" class="kv"/><rect x="185" y="126" width="13" height="18" class="kv"/><rect x="200" y="126" width="13" height="18" class="kv"/><rect x="215" y="126" width="13" height="18" class="kv"/><rect x="230" y="126" width="13" height="18" class="kv"/><rect x="245" y="126" width="13" height="18" class="kv"/><rect x="255" y="126" width="8" height="18" class="kv"/>
+  </g>
+  <text x="34" y="188" class="sub">request 2</text>
+  <g>
+    <rect x="95" y="176" width="13" height="18" class="kv"/><rect x="110" y="176" width="13" height="18" class="kv"/><rect x="125" y="176" width="13" height="18" class="kv"/><rect x="140" y="176" width="13" height="18" class="kv"/><rect x="155" y="176" width="13" height="18" class="kv"/><rect x="170" y="176" width="13" height="18" class="kv"/><rect x="185" y="176" width="13" height="18" class="kv"/><rect x="200" y="176" width="13" height="18" class="kv"/><rect x="215" y="176" width="13" height="18" class="kv"/><rect x="230" y="176" width="13" height="18" class="kv"/><rect x="245" y="176" width="13" height="18" class="kv"/><rect x="255" y="176" width="8" height="18" class="kv"/>
+  </g>
+  <text x="34" y="228" class="tiny">每个 (request, layer, pos) 的 K/V 全量保留</text>
+  <text x="34" y="246" class="tiny">prefill 直接写入，永不淘汰、永不做 LRU</text>
+  <text x="34" y="264" class="tiny">容量随主机内存走，128K 请求约 13 GB 也毫无压力</text>
+  <text x="34" y="284" class="tiny">按逻辑位置连续寻址，是唯一权威副本</text>
+
+  <rect x="290" y="44" width="90" height="250" rx="10" class="pt"/>
+  <text x="335" y="68" class="lab" text-anchor="middle">② 页表</text>
+  <text x="335" y="88" class="tiny" text-anchor="middle">逻辑位置 → 物理槽</text>
+  <rect x="300" y="100" width="70" height="20" rx="4" class="slot"/><text x="335" y="114" class="cell" text-anchor="middle">pos→slot</text>
+  <rect x="300" y="126" width="70" height="20" rx="4" class="slot"/><text x="335" y="140" class="cell" text-anchor="middle">pos→slot</text>
+  <rect x="300" y="152" width="70" height="20" rx="4" class="slot"/><text x="335" y="166" class="cell" text-anchor="middle">pos→slot</text>
+  <rect x="300" y="178" width="70" height="20" rx="4" class="slot"/><text x="335" y="192" class="cell" text-anchor="middle">pos→slot</text>
+  <text x="335" y="224" class="tiny" text-anchor="middle">命中</text>
+  <text x="335" y="240" class="tiny" text-anchor="middle">= 槽里有</text>
+  <text x="335" y="260" class="tiny" text-anchor="middle">未命中</text>
+  <text x="335" y="276" class="tiny" text-anchor="middle">= 仅主机</text>
+
+  <rect x="400" y="44" width="260" height="250" rx="10" class="gpu"/>
+  <text x="414" y="68" class="lab">③ GPU HBM（热缓存 · 固定 B 槽）</text>
+  <text x="414" y="86" class="sub">每个「请求 × 层」一组，B ≥ k</text>
+  <text x="402" y="115" class="tiny">L0</text>
+  <rect x="440" y="100" width="32" height="22" rx="3" class="hot"/><text x="456" y="115" class="cell" text-anchor="middle">17</text>
+  <rect x="476" y="100" width="32" height="22" rx="3" class="slot"/><text x="492" y="115" class="cell" text-anchor="middle">9</text>
+  <rect x="512" y="100" width="32" height="22" rx="3" class="slot"/><text x="528" y="115" class="cell" text-anchor="middle">44</text>
+  <rect x="548" y="100" width="32" height="22" rx="3" class="victim"/><text x="564" y="115" class="cell" text-anchor="middle">3</text>
+  <rect x="584" y="100" width="32" height="22" rx="3" class="slot"/><text x="600" y="115" class="cell" text-anchor="middle">21</text>
+  <rect x="620" y="100" width="32" height="22" rx="3" class="slot"/><text x="636" y="115" class="cell" text-anchor="middle">8</text>
+  <text x="402" y="143" class="tiny">L1</text>
+  <rect x="440" y="128" width="32" height="22" rx="3" class="slot"/><text x="456" y="143" class="cell" text-anchor="middle">31</text>
+  <rect x="476" y="128" width="32" height="22" rx="3" class="hot"/><text x="492" y="143" class="cell" text-anchor="middle">17</text>
+  <rect x="512" y="128" width="32" height="22" rx="3" class="slot"/><text x="528" y="143" class="cell" text-anchor="middle">6</text>
+  <rect x="548" y="128" width="32" height="22" rx="3" class="slot"/><text x="564" y="143" class="cell" text-anchor="middle">52</text>
+  <rect x="584" y="128" width="32" height="22" rx="3" class="victim"/><text x="600" y="143" class="cell" text-anchor="middle">12</text>
+  <rect x="620" y="128" width="32" height="22" rx="3" class="slot"/><text x="636" y="143" class="cell" text-anchor="middle">40</text>
+  <text x="402" y="171" class="tiny">L2</text>
+  <rect x="440" y="156" width="32" height="22" rx="3" class="slot"/><text x="456" y="171" class="cell" text-anchor="middle">5</text>
+  <rect x="476" y="156" width="32" height="22" rx="3" class="slot"/><text x="492" y="171" class="cell" text-anchor="middle">28</text>
+  <rect x="512" y="156" width="32" height="22" rx="3" class="hot"/><text x="528" y="171" class="cell" text-anchor="middle">17</text>
+  <rect x="548" y="156" width="32" height="22" rx="3" class="slot"/><text x="564" y="171" class="cell" text-anchor="middle">63</text>
+  <rect x="584" y="156" width="32" height="22" rx="3" class="slot"/><text x="600" y="171" class="cell" text-anchor="middle">1</text>
+  <rect x="620" y="156" width="32" height="22" rx="3" class="slot"/><text x="636" y="171" class="cell" text-anchor="middle">35</text>
+  <text x="402" y="199" class="tiny">L3</text>
+  <rect x="440" y="184" width="32" height="22" rx="3" class="slot"/><text x="456" y="199" class="cell" text-anchor="middle">22</text>
+  <rect x="476" y="184" width="32" height="22" rx="3" class="slot"/><text x="492" y="199" class="cell" text-anchor="middle">47</text>
+  <rect x="512" y="184" width="32" height="22" rx="3" class="slot"/><text x="528" y="199" class="cell" text-anchor="middle">14</text>
+  <rect x="548" y="184" width="32" height="22" rx="3" class="hot"/><text x="564" y="199" class="cell" text-anchor="middle">17</text>
+  <rect x="584" y="184" width="32" height="22" rx="3" class="slot"/><text x="600" y="199" class="cell" text-anchor="middle">59</text>
+  <rect x="620" y="184" width="32" height="22" rx="3" class="slot"/><text x="636" y="199" class="cell" text-anchor="middle">30</text>
+  <text x="414" y="226" class="tiny">图中 B = 6 仅示意；实际 B 为 k 的数倍（几千量级）</text>
+  <text x="414" y="244" class="tiny">绿 = 本步命中的热槽，红 = LRU 选中的 victim（下一个 miss 顶掉它）</text>
+  <text x="414" y="262" class="tiny">同一逻辑位置 17 可在多层各占一槽：分配粒度是「请求 × 层」</text>
+  <text x="414" y="284" class="tiny">每槽 = 1 条 KV 记录 + 逻辑位置 + LRU 最近性位</text>
+
+  <line x1="270" y1="150" x2="286" y2="150" stroke="#8B4513" stroke-width="1.6" marker-end="url(#arAlloc)"/>
+  <line x1="380" y1="150" x2="396" y2="150" stroke="#8B4513" stroke-width="1.6" marker-end="url(#arAlloc)"/>
+  <text x="271" y="140" class="tiny">查</text>
+
+  <rect x="20" y="310" width="640" height="70" rx="8" fill="#f8fafc" stroke="#e5e7eb"/>
+  <text x="36" y="336" class="form">HBM 占用 = N_ℓ × B × W_KV × s —— 与 L_ctx 无关</text>
+  <text x="36" y="358" class="sub">分配粒度是「请求 × 层」而不是「请求」：不同层的索引器选择不同，各自要有一组槽。</text>
+  <text x="36" y="376" class="sub">约束 B ≥ k：保证当前步选出的 k 条一定放得下，注意力永远算得动。</text>
+
+  <rect x="20" y="394" width="640" height="62" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="36" y="418" class="sub">算例：128K 上下文、k = 2048、取 B = 2k = 4096。</text>
+  <text x="36" y="440" class="sub">单层常驻 4096 条 vs 全量 131072 条 ≈ 3.1%，约 <tspan font-weight="700">32× 节省</tspan>（与论文实测"最高 30×"吻合）。</text>
+  <text x="36" y="458" class="sub">上下文再涨到 1M，B 仍是 4096，<tspan font-weight="700">HBM 占用不增</tspan>——这才叫解耦。</text>
+</svg>
+<p class="cap">图 3：DRAM 与 HBM 的分配对应关系。DRAM 侧按 (request, layer, pos) 连续全量存放；HBM 侧给每个「请求 × 层」分配一组固定 B 槽，靠页表做逻辑位置到物理槽的映射，LRU 决定谁被顶掉。</p>
+</div>
+
+三个要点值得单独记住：
+
+1. **分配粒度是「请求 × 层」，不是「请求」**。不同层的索引器选择不同，所以每层都要有一组自己的槽——这也是为什么公式里要乘 N_ℓ。
+2. **DRAM 与 HBM 解耦靠页表**。DRAM 侧按逻辑位置连续寻址；HBM 侧的槽位与逻辑位置无关，装的是"最近被选中的那几条"，映射关系全在页表里。
+3. **B 是常数，不随上下文长**。这正是容量墙被拆掉的地方：上下文从 128K 涨到 1M，DRAM 侧线性增长（无所谓，主机内存大），HBM 侧一动不动。
+
 ---
 
 ## 3. RESOLVE 融合核：五个阶段一次 launch 做完
