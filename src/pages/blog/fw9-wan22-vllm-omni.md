@@ -5,7 +5,7 @@ pubDate: 2026-08-11
 series: vLLM 与 SGLang 框架解码手记
 lang: zh
 altLang: en
-altHref: /en/
+altHref: /en/blog/fw9-wan22-vllm-omni
 layout: ../../layouts/BlogPost.astro
 ---
 
