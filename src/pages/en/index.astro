@@ -41,6 +41,8 @@ const fa = [
   { href: base + 'en/blog/fa2-kimi-k3', title: '(2) Kimi K3 — Dual Evolution of Attention and MoE', date: '2026-08-06' },
   { href: base + 'en/blog/fa3-minimax-m3', title: '(3) MiniMax M2.7 → M3 — The Leap of Sparse Attention', date: '2026-08-06' },
   { href: base + 'en/blog/fa4-deepseek-v4', title: '(4) DeepSeek V4 — Extreme Compression and Efficient Training', date: '2026-08-06' },
+  { href: base + 'en/blog/fa6-gated-deltanet', title: '(6) Gated DeltaNet — Conv1D Captures Locality, the Gated Delta Rule Compresses Globality', date: '2026-08-26' },
+  { href: base + 'en/blog/fa7-qwen38-arch', title: '(7) Qwen3.8 Dual Checkpoints — Dense 27B vs Sparse Flash-Next (360GB of Weights for 6B Activations)', date: '2026-08-28' },
 ];
 const op = [
   { href: base + 'en/blog/op1-mla-operator', title: '(1) MLA Operator-Level — c_kv / W_DKV / W_UK / W_UV Line-by-Line Pseudocode', date: '2026-08-07' },
@@ -55,7 +57,12 @@ const tr = [
   { href: base + 'en/blog/tr3-vllm-sglang-20260811', title: 'vLLM & SGLang Community Tracker · 2026-08-11 — vLLM v0.27.0 Ships in One Drop; SGLang Triple-Fixes Unified Pool & Wires PD', date: '2026-08-12' },
 ];
 const sysn = [
-  { href: base + 'en/blog/sys6-hisparse-hierarchical-kv-cache', title: '(6) HiSparse — Treating HBM as a Cache to Break the Long-Context Capacity Wall', date: '2026-09-07' },
+  { href: base + 'en/blog/sys1-pcie-numa-nic-hicache', title: '(1) The NUMA x PCIe x NIC Data Path Under P900 + HiCache', date: '2026-08-26' },
+  { href: base + 'en/blog/sys2-ring-attention', title: '(2) Sequence Parallelism + Ring Attention: Making 1M+ Token Training Routine', date: '2026-08-26' },
+  { href: base + 'en/blog/sys3-attention-evolution', title: '(3) MSA / CSA / HCA: Three Attention Redesign Routes in One Picture', date: '2026-08-26' },
+  { href: base + 'en/blog/sys4-knowledge-distillation', title: '(4) Knowledge Distillation: Passing the Dark Knowledge of a Large Model to a Small One', date: '2026-08-26' },
+  { href: base + 'en/blog/sys5-attention-evolution-kvcache', title: '(5) From MHA to HiCache: The Full KV Cache Compression Landscape', date: '2026-08-26' },
+  { href: base + 'en/blog/sys6-hisparse-hierarchical-kv-cache', title: '(6) HiSparse: Treating HBM as a Cache to Break the Long-Context Capacity Wall', date: '2026-09-07' },
 ];
 const hotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const hot = Object.entries(hotMods)
@@ -136,7 +143,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>Inference Systems Infrastructure Notes</h2>
-      <p class="series-tag">Series · 6 episodes in Chinese, English counterparts being backfilled. In order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
+      <p class="series-tag">Series · 6 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
       <ul class="post-list">
         {sysn.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
