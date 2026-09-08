@@ -1,6 +1,6 @@
 ---
 title: 'Operator Explainers (2): Model Quantization for Deployment — the precision-compression spectrum from FP16 to FP4'
-description: 'A systematic thread tying together the scattered quantization notes: FP8 (E4M3/E5M2), INT4 (AWQ/GPTQ), FP4 quantization-aware training, KV Cache quantization and eviction, plus deployment choices and inference-engine landing.'
+description: 'A systematic thread tying together the scattered quantization notes: FP8 (E4M3/E5M2), INT4 (AWQ/GPTQ), rotation-based quantization (QuaRot/SpinQuant), FP4 quantization-aware training, KV Cache quantization and eviction, plus deployment choices and inference-engine landing.'
 pubDate: 2026-09-08
 series: Operator Explainers
 lang: en
@@ -34,6 +34,14 @@ PTQ quantizes a trained model directly; the core question is "how to assign scal
 - **GPTQ**: per-layer OBS-style second-order quantization — when quantizing one column, compensate the others via the Hessian, minimizing ‖WX − ŴX‖². Good for offline GPU layer-by-layer compression.
 - **AWQ (activation-aware)**: compute activation saliency s = mean(|X|)^α, "amplify" important channels before quantizing; near-zero overhead, excellent fidelity on large-activation channels. The current LLM on-device default.
 - **per-group**: `group_size=128` is the industry default granularity, balancing fidelity and lookup-table cost.
+
+> **Rotation-based quantization (outlier suppression) — the frontier branch of PTQ.** Its mathematical lever is the *rotational invariance* of linear maps: for any orthogonal R (R⁻¹=Rᵀ), XW = (XR⁻¹)(RW). Left-multiplying weights by R and right-multiplying activations by Rᵀ leaves the product unchanged but "stirs" the numerical distribution — the **activation outliers** concentrated in a few channels get flattened, so 4-bit quantization no longer overflows its dynamic range. That is the key that makes W4A4 viable.
+>
+> - **QuaRot (NeurIPS 2024)**: uses a randomized Hadamard transform to build the orthogonal rotation, applying R1–R4 rotations across weights, activations, and KV Cache simultaneously — the first to hit **W4A4KV4** (4-bit weights + 4-bit acts + 4-bit KV) near-losslessly on LLaMA-2/3, training-free and plug-and-play.
+> - **SpinQuant (arXiv:2405.16406)**: upgrades the rotation from "random fixed" to "learnable" — optimizing the rotation matrices on the Stiefel manifold via Cayley SGD so the rotation fits both weight and activation distributions. On LLaMA-3 it **beats QuaRot across the board, recovering up to 45.1% more accuracy**, and folds RoPE into the rotation optimization too.
+> - **DuQuant**: adds *channel permutation* on top of rotation, scattering outliers into adjacent channels for even steadier W4A4.
+>
+> Deployment note: rotation is **orthogonal** to AWQ/GPTQ — AWQ protects salient channels, GPTQ does second-order compensation, the rotation camp flattens outliers; the three stack (rotate then AWQ), and that stacking is the key piece for pushing 4-bit on-device inference to usable today.
 
 > VLA in practice: OpenVLA INT4 ≈ 4GB with near-lossless accuracy runs on Jetson Orin, leaving headroom for perception/planning/control — the only way "big models enter the physical world."
 

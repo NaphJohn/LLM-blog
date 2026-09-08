@@ -1,6 +1,6 @@
 ---
 title: '算子讲解手记（二）：模型量化部署——从 FP16 到 FP4 的精度压缩谱系'
-description: '把分散在每日追踪里的量化知识系统串起来：FP8(E4M3/E5M2)、INT4(AWQ/GPTQ)、FP4 量化感知训练、KV Cache 量化与驱逐，以及部署选型与推理引擎落地。'
+description: '把分散在每日追踪里的量化知识系统串起来：FP8(E4M3/E5M2)、INT4(AWQ/GPTQ)、旋转量化(QuaRot/SpinQuant)、FP4 量化感知训练、KV Cache 量化与驱逐，以及部署选型与推理引擎落地。'
 pubDate: 2026-09-08
 series: 算子讲解手记
 lang: zh
@@ -34,6 +34,14 @@ PTQ 在已训模型上直接量化，核心是"怎么分配缩放因子"：
 - **GPTQ**：逐层 OBS 风格二阶量化——量化某列时用 Hessian 补偿其余列，最小化 ‖WX − ŴX‖²。适合 GPU 上逐层离线压缩。
 - **AWQ（激活感知）**：先算激活显著性 s = mean(|X|)^α，给重要通道"放大权重"再量化，几乎零额外开销，对大激活通道保真极好。是当前 LLM 端侧部署主流。
 - **per-group 量化**：`group_size=128` 是工业界默认粒度，在细粒度保真和查找表开销间取得平衡。
+
+> **旋转量化（rotation-based outlier suppression）——PTQ 的前沿支线。** 它的数学支点来自线性变换的「旋转不变性」：对任意正交矩阵 R（满足 R⁻¹=Rᵀ），有 XW = (XR⁻¹)(RW)。把权重 W 左乘 R、激活 X 右乘 Rᵀ，乘积不变，但数值分布被「搅匀」了——原本集中在少数通道的**激活异常值（outlier）**被摊平，4-bit 量化不再被 outlier 撑爆动态范围，这是把 W4A4 推到可用的关键。
+>
+> - **QuaRot（NeurIPS 2024）**：用随机化 Hadamard 变换生成正交旋转，在权重、激活、KV Cache 三条线同时施加 R1~R4 四级旋转，首次在 LLaMA-2/3 上做到 **W4A4KV4**（4-bit 权重 + 4-bit 激活 + 4-bit KV）近乎无损，且无需训练、即插即用。
+> - **SpinQuant（arXiv:2405.16406）**：把旋转从「随机固定」升级为「可学习」——在 Stiefel 流形上用 Cayley SGD 优化旋转矩阵，让旋转同时适配权重与激活分布。在 LLaMA-3 上**全面超越 QuaRot，最高多挽回 45.1% 的精度损失**，并顺带把位置编码（RoPE）也纳入旋转优化。
+> - **DuQuant**：旋转之外再叠加「通道置换（channel permutation）」，进一步把 outlier 打散到相邻通道，W4A4 下比 SpinQuant 更稳。
+>
+> 落地提示：旋转量化与 AWQ/GPTQ **正交**——AWQ 保 salient 通道、GPTQ 二阶补偿、旋转派抹平 outlier，三者可叠加（先旋转再 AWQ），是今天 4-bit 端侧推理可用的关键拼图。
 
 > VLA 实战：OpenVLA 做 INT4 量化后约 4GB，成功率近乎无损，可在 Jetson Orin 上跑，给感知/规划/控制栈留出余量——这是"大模型进物理世界"的必经之路。
 
