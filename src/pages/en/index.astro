@@ -70,6 +70,9 @@ const sysn = [
   { href: base + 'en/blog/sys6-hisparse-hierarchical-kv-cache', title: '(6) HiSparse: Treating HBM as a Cache to Break the Long-Context Capacity Wall', date: '2026-09-07' },
   { href: base + 'en/blog/sys7-dcp-decode-context-parallel', title: '(7) DCP: Decode Context Parallelism — Sharding KV Cache Along the Sequence Dimension', date: '2026-09-08' },
 ];
+const agn = [
+  { href: base + 'en/blog/ag1-agent-knowledge-system', title: '(1) The Agent Knowledge System — capability stack, context engineering, and inference rebuilt for Agentic workloads', date: '2026-09-08' },
+];
 const hotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const hot = Object.entries(hotMods)
   .map(([key, mod]) => {
@@ -113,7 +116,7 @@ const hot = Object.entries(hotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge lang="en" />
-      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; ten key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Inference Systems Infrastructure Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) keep growing, with most posts bilingual.</p>
+      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; eleven key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Inference Systems Infrastructure Notes, Agent Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) keep growing, with most posts bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 6 episodes, in order: from fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 deep dive (why the feature constraint is a scaling lock). Each post has a Chinese counterpart.</p>
@@ -152,6 +155,14 @@ const hot = Object.entries(hotMods)
       <p class="series-tag">Series · 7 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall) → DCP decode context parallelism (sharding KV along the sequence dimension, reusing a Scratch Buffer for comms). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
       <ul class="post-list">
         {sysn.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>Agent Notes</h2>
+      <p class="series-tag">Series · 1 episode (opening, ongoing). Threading the scattered Agent notes into one system: capability stack (model / planning / tools / memory) → tool calling and MCP → context engineering (1M-token directory attention) → execution paradigms and orchestration (Orchestrator + executors) → how Agentic workloads turn KV Cache from a memory problem into a scheduling problem. The core claim: Agents define a variable-length, branching, multi-turn workload shape that breaks the engine static scheduling assumptions, closing the loop with HiCache / HiSparse / DCP / KV quantization in Inference Systems Infrastructure Notes. Each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {agn.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>

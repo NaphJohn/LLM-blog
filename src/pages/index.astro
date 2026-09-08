@@ -70,6 +70,9 @@ const sys = [
   { href: base + 'blog/sys6-hisparse-hierarchical-kv-cache', title: '（六）HiSparse —— 把 HBM 当缓存用，长上下文服务的容量墙怎么拆', date: '2026-09-07' },
   { href: base + 'blog/sys7-dcp-decode-context-parallel', title: '（七）DCP —— 解码上下文并行，把 KV 缓存沿序列维度分片（冗余复制→Scratch Buffer 通信）', date: '2026-09-08' },
 ];
+const ag = [
+  { href: base + 'blog/ag1-agent-knowledge-system', title: '（一）Agent 知识体系——能力栈、上下文工程与 Agentic 负载下的推理重构', date: '2026-09-08' },
+];
 const aihotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const aihot = Object.entries(aihotMods)
   .map(([key, mod]) => {
@@ -132,7 +135,7 @@ const aihot = Object.entries(aihotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge />
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十一大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、智能体手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
@@ -162,6 +165,14 @@ const aihot = Object.entries(aihotMods)
       <p class="series-tag">系列 · 共 7 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
       <ul class="post-list">
         {sys.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>智能体手记</h2>
+      <p class="series-tag">系列 · 共 1 篇（开篇，持续更新）。把散落在每日追踪里的 Agent 知识串成体系：能力栈（模型 / 规划 / 工具 / 记忆）→ 工具调用与 MCP → 上下文工程（1M-token 目录注意力）→ 执行范式与编排（Orchestrator + 执行者）→ Agentic 负载如何把 KV Cache 从显存问题变成调度问题。核心结论是 Agent 定义了「变长 / 分叉 / 多轮」的负载形态，击穿了推理引擎的静态调度假设，从而与「推理系统基础设施手记」的 HiCache / HiSparse / DCP / KV 量化串成一条完整闭环，每篇附英文对照。</p>
+      <ul class="post-list">
+        {ag.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
