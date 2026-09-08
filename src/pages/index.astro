@@ -50,6 +50,7 @@ const fa = [
 ];
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
+  { href: base + 'blog/op2-model-quantization', title: '（二）模型量化部署——从 FP16 到 FP4 的精度压缩谱系（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化）', date: '2026-09-08' },
 ];
 const pp = [
   { href: base + 'blog/pp1-transformer', title: '（一）Transformer 精读：用「注意力」取代循环，把序列建模变成可并行计算', date: '2026-08-12' },
@@ -67,6 +68,7 @@ const sys = [
   { href: base + 'blog/sys4-knowledge-distillation', title: '（四）知识蒸馏 —— 把大模型的「暗知识」传给小模型', date: '2026-08-26' },
   { href: base + 'blog/sys5-attention-evolution-kvcache', title: '（五）从 MHA 到 HiCache——KV Cache 压缩方向的演进全景', date: '2026-08-26' },
   { href: base + 'blog/sys6-hisparse-hierarchical-kv-cache', title: '（六）HiSparse —— 把 HBM 当缓存用，长上下文服务的容量墙怎么拆', date: '2026-09-07' },
+  { href: base + 'blog/sys7-dcp-decode-context-parallel', title: '（七）DCP —— 解码上下文并行，把 KV 缓存沿序列维度分片（冗余复制→Scratch Buffer 通信）', date: '2026-09-08' },
 ];
 const aihotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const aihot = Object.entries(aihotMods)
@@ -157,7 +159,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>推理系统基础设施手记</h2>
-      <p class="series-tag">系列 · 共 6 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
+      <p class="series-tag">系列 · 共 7 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
       <ul class="post-list">
         {sys.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
@@ -181,7 +183,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>算子讲解手记</h2>
-      <p class="series-tag">系列 · 共 1 篇（开篇）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 2 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，第二篇模型量化部署（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化），后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
       <ul class="post-list">
         {op.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
