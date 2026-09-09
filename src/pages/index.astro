@@ -11,6 +11,7 @@ const spec = [
   { href: base + 'blog/ep5-dflash-vs-dspark', title: '同台对比：DFlash 与 DSpark 到底差在哪', date: '2026-07-31' },
   { href: base + 'blog/ep6-eagle3', title: 'EAGLE-3 深度解析：扔掉 feature 约束，让草稿模型第一次"吃数据"变快', date: '2026-08-04' },
   { href: base + 'blog/ep7-mtp-dspark', title: 'MTP Head 与置信度头：把推测解码三条自草稿路线串成一条链', date: '2026-08-19' },
+  { href: base + 'blog/ep8-dflash2-and-combining', title: 'DFlash 2 与"组合之问"：块扩散升级，但为何框架不直接叠 DSpark 调度', date: '2026-09-09' },
 ];
 const mm = [
   { href: base + 'blog/mm1-foundations', title: '（一）基础与对齐范式：从"会写"到"会看会动"', date: '2026-07-31' },
@@ -142,7 +143,7 @@ const aihot = Object.entries(aihotMods)
       <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十一大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、智能体手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
 
       <h2>推测解码手记</h2>
-      <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3 深度解析（feature 约束为何是 scaling 枷锁）。每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 8 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3（feature 约束的 scaling 枷锁）→ MTP 与置信度头（三条自草稿路线串链）→ DFlash 2 升级与"为何框架不直接组合"的元问题。每篇附英文对照。</p>
       <ul class="post-list">
         {spec.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
