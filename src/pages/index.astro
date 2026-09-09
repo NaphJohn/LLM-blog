@@ -47,6 +47,7 @@ const fa = [
   { href: base + 'blog/fa4-deepseek-v4', title: '（四）DeepSeek V4：极致压缩与高效训练', date: '2026-08-06' },
   { href: base + 'blog/fa6-gated-deltanet', title: '（六）Gated DeltaNet——Conv1D 先抓局部、Gated Delta Rule 再压全局的线性注意力层', date: '2026-08-26' },
   { href: base + 'blog/fa7-qwen38-arch', title: '（七）Qwen3.8 双 checkpoint 对比：稠密 27B vs 稀疏 Flash-Next（360GB 权重只为换 6B 激活）', date: '2026-08-28' },
+  { href: base + 'blog/fa8-qwen38-three-tiers', title: '（八）Qwen3.8 三版本同框：2.4T 旗舰、Flash 服务版与 Flash-Next 架构预览', date: '2026-09-09' },
 ];
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
@@ -189,7 +190,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>前沿架构解码手记</h2>
-      <p class="series-tag">系列 · 共 5 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 稀疏 MoE 大容量，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 7 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）→ Qwen3.8 三版本同框（2.4T-A95B 旗舰 / Flash 服务版 / Flash-Next 架构预览，125B MoE + 51B N-gram 每激活 6B）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 稀疏 MoE 大容量，每篇附英文对照。</p>
       <ul class="post-list">
         {fa.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>

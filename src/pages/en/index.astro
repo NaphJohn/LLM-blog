@@ -47,6 +47,7 @@ const fa = [
   { href: base + 'en/blog/fa4-deepseek-v4', title: '(4) DeepSeek V4 — Extreme Compression and Efficient Training', date: '2026-08-06' },
   { href: base + 'en/blog/fa6-gated-deltanet', title: '(6) Gated DeltaNet — Conv1D Captures Locality, the Gated Delta Rule Compresses Globality', date: '2026-08-26' },
   { href: base + 'en/blog/fa7-qwen38-arch', title: '(7) Qwen3.8 Dual Checkpoints — Dense 27B vs Sparse Flash-Next (360GB of Weights for 6B Activations)', date: '2026-08-28' },
+  { href: base + 'en/blog/fa8-qwen38-three-tiers', title: '(8) The Qwen3.8 Family in One Frame — the 2.4T Flagship, Flash the Serving Build, and Flash-Next the Architecture Preview', date: '2026-09-09' },
 ];
 const op = [
   { href: base + 'en/blog/op1-mla-operator', title: '(1) MLA Operator-Level — c_kv / W_DKV / W_UK / W_UV Line-by-Line Pseudocode', date: '2026-08-07' },
@@ -182,7 +183,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>Frontier Architecture Decoding Notes</h2>
-      <p class="series-tag">Series · 4 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%). The three "attention-reshape" controlled experiments strung into one arc: dense → sparse → compressed attention, all converging on MoE + 1M context, each with a Chinese counterpart.</p>
+      <p class="series-tag">Series · 7 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%) → Qwen3.8 dual checkpoints (dense 27B vs sparse Flash-Next, 360GB of weights for 6B activations) → the Qwen3.8 family in one frame (2.4T-A95B flagship / Flash serving build / Flash-Next architecture preview, 125B MoE + 51B N-gram at 6B active per token). The attention-reshape controlled experiments strung into one arc: dense → sparse → compressed attention, all converging on sparse MoE at scale, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {fa.map((p) => (
           <li>
