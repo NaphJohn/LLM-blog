@@ -1,5 +1,7 @@
 # 大模型技术notes
 
+**在线站点：https://naphjohn.github.io/LLM-blog/** ｜ 源码：[NaphJohn/LLM-blog](https://github.com/NaphJohn/LLM-blog)
+
 基于 [Astro](https://astro.build) 的双语技术博客（**中文为主**，关键系列提供中英对照），部署于 GitHub Pages 项目页（`naphjohn.github.io/LLM-blog/`）。
 
 ## 技术栈
