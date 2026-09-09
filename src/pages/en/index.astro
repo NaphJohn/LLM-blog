@@ -70,6 +70,8 @@ const sysn = [
   { href: base + 'en/blog/sys6-hisparse-hierarchical-kv-cache', title: '(6) HiSparse: Treating HBM as a Cache to Break the Long-Context Capacity Wall', date: '2026-09-07' },
   { href: base + 'en/blog/sys7-dcp-decode-context-parallel', title: '(7) DCP: Decode Context Parallelism — Sharding KV Cache Along the Sequence Dimension', date: '2026-09-08' },
   { href: base + 'en/blog/sys8-parallel-strategies-pd-disaggregation', title: '(8) Parallelism Strategies and PD Disaggregation — slicing TP/PP/EP/SP/CP and sizing the prefill:decode ratio', date: '2026-09-08' },
+  { href: base + 'en/blog/sys9-kv-cache-fundamentals-optimization', title: '(9) The KV Cache Landscape — why it decides your throughput, latency and concurrency', date: '2026-09-09' },
+  { href: base + 'en/blog/sys10-kv-cache-engineering-sglang-vllm-attentionstore', title: '(10) KV Cache in Production — SGLang two-level pools, vLLM block management, and AttentionStore tiered caching', date: '2026-09-09' },
 ];
 const agn = [
   { href: base + 'en/blog/ag1-agent-knowledge-system', title: '(1) The Agent Knowledge System — capability stack, context engineering, and inference rebuilt for Agentic workloads', date: '2026-09-08' },
@@ -153,7 +155,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>Inference Systems Infrastructure Notes</h2>
-      <p class="series-tag">Series · 8 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall) → DCP decode context parallelism (sharding KV along the sequence dimension, reusing a Scratch Buffer for comms) → parallelism strategies and PD disaggregation (how to slice and combine TP/PP/EP/SP/CP, and how to compute the prefill:decode instance ratio). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
+      <p class="series-tag">Series · 10 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall) → DCP decode context parallelism (sharding KV along the sequence dimension, reusing a Scratch Buffer for comms) → parallelism strategies and PD disaggregation (how to slice and combine TP/PP/EP/SP/CP, and how to compute the prefill:decode instance ratio) → the KV Cache landscape (why it can be cached, how big it gets, the three-layer taxonomy and five quantifiable knobs) → KV Cache in production (SGLang two-level pools and HiCache, vLLM paged block management and the cross-layer unified layout, and AttentionStore measured on Kunlunxin P800). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
       <ul class="post-list">
         {sysn.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>

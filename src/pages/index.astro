@@ -70,6 +70,8 @@ const sys = [
   { href: base + 'blog/sys6-hisparse-hierarchical-kv-cache', title: '（六）HiSparse —— 把 HBM 当缓存用，长上下文服务的容量墙怎么拆', date: '2026-09-07' },
   { href: base + 'blog/sys7-dcp-decode-context-parallel', title: '（七）DCP —— 解码上下文并行，把 KV 缓存沿序列维度分片（冗余复制→Scratch Buffer 通信）', date: '2026-09-08' },
   { href: base + 'blog/sys8-parallel-strategies-pd-disaggregation', title: '（八）并行切分策略全景与 PD 分离——TP/PP/EP/SP/CP 怎么切，PD 实例怎么配比', date: '2026-09-08' },
+  { href: base + 'blog/sys9-kv-cache-fundamentals-optimization', title: '（九）KV Cache 全景——它为什么同时决定你的吞吐、延迟和能开多少并发', date: '2026-09-09' },
+  { href: base + 'blog/sys10-kv-cache-engineering-sglang-vllm-attentionstore', title: '（十）KV Cache 工程实现——SGLang 两级内存池、vLLM Block 管理与 AttentionStore 多级缓存', date: '2026-09-09' },
 ];
 const ag = [
   { href: base + 'blog/ag1-agent-knowledge-system', title: '（一）Agent 知识体系——能力栈、上下文工程与 Agentic 负载下的推理重构', date: '2026-09-08' },
@@ -163,7 +165,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>推理系统基础设施手记</h2>
-      <p class="series-tag">系列 · 共 8 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）→ 并行切分策略全景与 PD 分离（TP/PP/EP/SP/CP 五把刀怎么切、怎么组合，以及 prefill:decode 实例配比的算法）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
+      <p class="series-tag">系列 · 共 10 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）→ 并行切分策略全景与 PD 分离（TP/PP/EP/SP/CP 五把刀怎么切、怎么组合，以及 prefill:decode 实例配比的算法）→ KV Cache 全景（为什么能缓存、到底多大、三层优化分类与五个可量化旋钮）→ KV Cache 工程实现（SGLang 两级内存池与 HiCache、vLLM 分页 Block 管理与跨层统一布局、AttentionStore 在昆仑芯 P800 上的实测）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
       <ul class="post-list">
         {sys.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
