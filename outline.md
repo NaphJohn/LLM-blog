@@ -1,146 +1,130 @@
-# 推测解码技术连载 · 博客大纲（Spec-Decode Blog — Outline）
+# LLM-blog · 全站系列地图与写作 SOP
 
-> 状态：**大纲评审稿**（未建仓库）。待用户确认后初始化 `hangkaiwang.github.io`（Astro + 双语）。
-> 决策记录：仓库=`hangkaiwang.github.io` · 框架=Astro · 语言=双语并行（每主题 1 篇中文 + 1 篇英文，内容一致）· 节奏=先大纲、后建站。
-
----
-
-## 0. 项目元信息
-
-| 项 | 值 |
-|---|---|
-| 仓库 | `hangkaiwang.github.io`（GitHub Pages，免费） |
-| 框架 | Astro + Content Collections + i18n 路由 |
-| 语言策略 | 双语并行：**每个主题 = 1 篇中文 + 1 篇英文，内容一致** |
-| 默认路由 | 建议 `/` = 英文，`/zh/` = 中文（国际读者为主；可调） |
-| 部署 | GitHub Actions → Pages，`git push` 即上线（无需服务器/CDN 费用） |
-| 可复用资产 | `dflash_explainer.html`（CPU 领先 GPU 时序 SVG）、DFlash vs DSpark 对比文、DSpark 邮件素材 |
+> 仓库：`NaphJohn/LLM-blog`（GitHub Pages 项目页）· 站点：https://naphjohn.github.io/LLM-blog/
+> 框架：Astro（`base: '/LLM-blog/'`，默认语言 zh 无前缀，英文在 `/en/` 下）· 双语：每篇中文 + 英文各一版
+> 本文件替代 2026-08 初版《推测解码技术连载 · 博客大纲》（那版只覆盖 ep 系列，已过期）。
 
 ---
 
-## 1. 站点架构（简版）
+## 1. 目录与文件约定
 
-- `src/content/blog/zh/<slug>.md` 与 `src/content/blog/en/<slug>.md` 成对存放，同一 `slug` 中英对照。
-- 列表页 `/blog` 与 `/zh/blog` 各自按语言聚合；每篇底部提供「中文 / English」切换链接（指向同 slug 的另一语言版本）。
-- 交互组件用 Astro `.astro` / MDX 封装：
-  - 「草稿→验证」循环动画（Ep1）
-  - CPU 领先 GPU 时序对比 SVG（复用 `dflash_explainer.html`，Ep3）
-  - DFlash vs DSpark 可切换对比表 / 并排架构图（Ep5）
-- 部署：仓库根 `.github/workflows/deploy.yml` 跑 `astro build` → 推 `gh-pages` → Pages 启用。
+```text
+src/pages/blog/<slug>.md        中文正文   layout: ../../layouts/BlogPost.astro
+src/pages/en/blog/<slug>.md     英文正文   layout: ../../../layouts/BlogPost.astro   ← 多一层 ../
+src/pages/index.astro          中文首页：手写系列数组 + 各系列 <h2>/<p class="series-tag">/<ul class="post-list">
+src/pages/en/index.astro       英文首页：同上（数组名 sysn / agn / rln 等，避开 JS 全局名）
+dist/                          构建产物，不提交
+```
+
+**每篇文章 frontmatter 模板**
+
+```yaml
+---
+title: 系列名（N）：标题
+description: 一句话摘要（会进 meta description，写满一行）
+pubDate: YYYY-MM-DD
+series: 系列名
+lang: zh          # en 版写 en
+altLang: en       # en 版写 zh
+altHref: /en/blog/<slug>
+layout: ../../layouts/BlogPost.astro
+---
+```
+
+**英文 frontmatter 三条规定（踩过坑）**
+1. `title` / `description` 含 `": "` 必须整体用**双引号**包裹；
+2. 双引号内**禁止出现单引号**（如 `RT-1's` 会破坏 YAML）→ 改写为 `the RT-1 route` 或去掉撇号；
+3. 英文版 layout 路径比中文版**多一层 `../`**。
 
 ---
 
-## 2. 系列总览（Series Map）
+## 2. 系列地图（12 个系列，截至 2026-09-11）
 
-循序渐进 8 篇（第 8 篇可选），每篇中英各一版：
+| 前缀 | 系列名 | EN | 篇数 | slug 区间 | 定位 |
+|---|---|---|---|---|---|
+| `ep` | 推测解码手记 | Speculative Decoding Notes | 8 | ep1–ep8 | 本博客起点：draft/verify → DFlash / DSpark / EAGLE-3 / MTP → DFlash 2 |
+| `mm` | 多模态解码手记 | Multimodal Decoding Notes | 5 | mm1–mm5 | 对齐范式 → VLM → 生成模型 → VLA/世界模型 → 高效系统 |
+| `fw` | vLLM 与 SGLang 框架解码手记 | vLLM & SGLang Serving Notes | 9 | fw1–fw9 | 推理引擎原理、前沿对抗、版本演进、选型 |
+| `vla` | VLA 解码手记 | VLA Notes | 9 | vla1–vla9 | 「动手」能力：动作生成 → π 系列 → 国内玩家 → 世界模型 → RT-1 → V-JEPA 2 → Dreamer V3 → **Octo** |
+| `fa` | 前沿架构解码手记 | Frontier Architecture Decoding Notes | 8 | fa1–fa8 | Kimi K3 / MiniMax M3 / DeepSeek V4 / Qwen3.8 双 checkpoint / 三版本同框 |
+| `op` | 算子讲解手记 | Operator Notes | 2 | op1–op2 | MLA 算子逐行伪代码、模型量化部署谱系 |
+| `pp` | 论文科普手记 | Paper Primer Notes | 2 | pp1–pp2 | Transformer 精读、Diffusion Policy 精读 |
+| `tr` | 社区跟踪手记 | Community Tracker Notes | 3 | tr1–tr3 | vLLM/SGLang 上游 commit 的时间切片 |
+| `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 10 | sys1–sys10 | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 |
+| `rl` | 强化学习训练手记 | RL Training Notes | 1 | rl1– | **训练侧**：分布式 RL 训练 / PPO·GRPO / RLHF 基础设施 |
+| `ag` | 智能体手记 | Agent Notes | 1 | ag1– | Agent 能力栈、上下文工程、Agentic 负载下的推理重构 |
+| `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 18+ | aihot-YYYYMMDD | 自动聚合（`import.meta.glob`），无需在首页手写注册 |
 
-| # | 中文标题 | English Title | 主题 |
-|---|---|---|---|
-| 1 | 推测解码：让大模型"一次生成多个 token"的无损加速 | Speculative Decoding: Lossless Multi-Token Generation | 基础概念 |
-| 2 | 为什么传统草稿模型只能加速 2–3 倍？ | Why Autoregressive Drafters Cap at 2–3× | 瓶颈分析 |
-| 3 | DFlash：用块扩散 + 特征注入革掉草稿的串行 | DFlash: Block-Diffusion Drafting Meets Target Conditioning | DFlash 深度解析 |
-| 4 | DSpark：半自回归 + 置信度调度，让验证长度自适应 | DSpark: Semi-Autoregressive Drafting with Confidence-Aware Scheduling | DSpark 深度解析 |
-| 5 | 同台对比：DFlash 与 DSpark 到底差在哪 | Head-to-Head: Where DFlash and DSpark Actually Differ | 对比篇 |
-| 6 | 在 OpenInfer Qwen3-4B 上跑通 DFlash 与 DSpark | Benchmarking DFlash & DSpark on OpenInfer Qwen3-4B | 实测篇 |
-| 7 | MTP Head 与置信度头：三条自草稿路线串成链 | MTP Head & Confidence Head: One Chain Across Three Self-Drafting Routes | 结构收口 |
-| 8（可选） | 动手训练一个 DFlash drafter | Training Your Own DFlash Drafter | 动手实践 |
-
----
-
-## 3. 逐篇大纲
-
-### Episode 1 — 推测解码是什么
-**中文**：推测解码：让大模型"一次生成多个 token"的无损加速
-**English**：Speculative Decoding: Lossless Multi-Token Generation
-- 1.1 动机：自回归生成的串行瓶颈（每 token 一次大模型前向，贵且慢）
-- 1.2 核心思想：Draft + Verify 两阶段（小模型并行起草 → 大模型并行验证）
-- 1.3 为什么无损？拒绝采样（rejection sampling）保分布
-- 1.4 加速从哪来？接受长度 α 的直觉与加速比公式
-- 1.5 最小直觉例子：草稿 4 个、接受 3 个
-- 1.6 小结 + 下篇预告
-- 🔧 交互：草稿→验证循环动画小部件
-
-### Episode 2 — 瓶颈：自回归草稿模型的天花板
-**中文**：为什么传统草稿模型只能加速 2–3 倍？
-**English**：Why Autoregressive Drafters Cap at 2–3×
-- 2.1 回顾：加速 ≈ α / (1 + β·k)
-- 2.2 EAGLE-3 为何卡在 2–3×
-- 2.3 草稿成本随投机 token 数线性增长（drafting cost ∝ k）
-- 2.4 内存墙与串行化（draft 与 verify 之间的 gap）
-- 2.5 破局思路：并行 / 非自回归草稿 → 引出 DFlash / DSpark
-- 2.6 预告
-
-### Episode 3 — DFlash 深度解析
-**中文**：DFlash：用块扩散 + 特征注入革掉草稿的串行
-**English**：DFlash: Block-Diffusion Drafting Meets Target Conditioning
-- 3.1 来源与定位（Z Lab + SGLang + Modal，2026-06-15 博客）
-- 3.2 Block Diffusion Drafter：一次前向并行草拟一整块 masked future tokens
-- 3.3 Target Hidden-State Conditioning + KV Injection（跨层注入 target 特征，维持高接受率）
-- 3.4 Spec V2 引擎 + Overlap Scheduler：消除 host-device 同步空转（+33%）
-- 3.5 实测数据：Qwen3-8B 最高 6×（比 EAGLE-3 快 ~2.5×）、Blackwell 15×
-- 3.6 生态：SGLang 主支持、vLLM PR #16818、Qwen3 系列多档 drafter
-- 🔧 交互：CPU 领先 GPU 时序对比 SVG（复用 `dflash_explainer.html`）
-
-### Episode 4 — DSpark 深度解析
-**中文**：DSpark：半自回归 + 置信度调度，让验证长度自适应
-**English**：DSpark: Semi-Autoregressive Drafting with Confidence-Aware Scheduling
-- 4.1 来源与定位（DeepSeek + 北大，2026-06-27 开源，MIT，deepseek-ai/DeepSpec）
-- 4.2 半自回归 + 马尔可夫头：块内顺序依赖怎么建
-- 4.3 置信度调度器：高置信多验证 / 低置信少验证
-- 4.4 零质量损失 + 大模型并行验证
-- 4.5 实测数据：V4 加速 57–85%、吞吐 +400%
-- 4.6 生态：vLLM PR #46995（复用稀疏 MLA 非因果索引、DSparkSpeculator 继承 DFlash、Triton 非因果 SWA 内核），同时支持 SGLang / OpenInfer
-
-### Episode 5 — 对比篇：DFlash vs DSpark
-**中文**：同台对比：DFlash 与 DSpark 到底差在哪
-**English**：Head-to-Head: Where DFlash and DSpark Actually Differ
-- 5.1 共性：都是投机解码、都零质量损失
-- 5.2 维度对比表（草稿范式 / 顺序建模 / 验证调度 / 执行优化 / 效果 / 生态）
-- 5.3 关键区别一句话：DFlash 革「草稿并行方式 + 执行引擎」；DSpark 革「块内顺序建模 + 验证调度」
-- 5.4 为什么正交可叠加（OpenInfer 能同时挂两套路径的原因）
-- 5.5 发布提醒：点明是「独立双后端」还是「drafter 互换 + 共享执行引擎」
-- 🔧 交互：可切换对比表 / 并排架构图
-
-### Episode 6 — 实测篇：OpenInfer Qwen3-4B 双后端
-**中文**：在 OpenInfer Qwen3-4B 上跑通 DFlash 与 DSpark
-**English**：Benchmarking DFlash & DSpark on OpenInfer Qwen3-4B
-- 6.1 测试环境（硬件 / 基线 = 原生自回归）
-- 6.2 评测方法（接受长度 / tokens·s⁻¹ / 吞吐 / 质量一致性）
-- 6.3 DFlash 路径结果与调参
-- 6.4 DSpark 路径结果与调参
-- 6.5 组合策略（若叠加）
-- 6.6 结论 + 复现命令
-
-### Episode 7 — MTP Head 与置信度头：把推测解码三条自草稿路线串成一条链
-- 7.1 MTP Head 结构：训练期多令牌预测、推理作草稿头（已写 ep7-mtp-dspark.md）
-- 7.2 为什么 MTP 能当 Drafter：并行验证、接受最长前缀
-- 7.3 EAGLE-3 vs MTP：专门训练的 Draft Head vs 原生多令牌头
-- 7.4 DFlash：一次 forward 并行整块，代价是 suffix decay
-- 7.5 DSpark = DFlash backbone + Markov Head + Confidence Head
-- 7.6 Confidence Head：c_k = 条件接受概率 → a_j = ∏c_i（prefix survival）
-- 7.7 端到端流程图 + 四方法关系图 + 对比表
-
-### Episode 8（可选）— 动手训练一个 DFlash drafter
-- 8.1 数据准备
-- 8.2 drafter 结构
-- 8.3 训练目标
-- 8.4 接入 OpenInfer / SGLang
+**首页系列顺序（当前）**：`ep → mm → fw → sys → ag → vla → fa → op → pp → tr → rl → aihot`
 
 ---
 
-## 4. 发布节奏建议
+## 3. 推荐学习路径（从零读起）
 
-- **起步**：先发 Ep1（基础，必读门槛低）+ Ep5（对比篇，资产现成、最能吸睛），攒初始流量。
-- **节奏**：建议每周 1 篇（中英同步发），或双周 1 篇，保持连续更新对 SEO 友好。
-- **工作流**：你每写好一篇草稿（或让我据大纲扩写），我负责 build + deploy，你只需 `git push` 审阅后的版本。
+```text
+① 想懂「推理为什么慢」
+   pp1 Transformer → fw1 为什么需要推理引擎 → sys9/sys10 KV Cache 全景与工程 → fw2/fw3 vLLM / SGLang
 
-## 5. 待你拍板的小项
+② 想懂「改模型能省什么」
+   sys3 MSA/CSA/HCA 三种注意力改造 → fa1 前沿总览 → fa4 DeepSeek V4 → fa7/fa8 Qwen3.8
 
-1. **默认语言**：建议英文默认（`/`） + `/zh` 中文；若你更想服务中文读者可反过来。
-2. **站点标题 / 品牌名**：例如 "SpecDecode Notes" 或 "推测解码手记"？影响域名子路径与导航。
-3. **Ep6 数据可公开性**：OpenInfer Qwen3-4B 的实测数字是否可对外发布？决定 Ep6 现在能否动笔。
-4. **开建触发**：大纲确认后，是否立即初始化仓库 + 先把 Ep1/Ep5 推上去（用现成资产）？
+③ 想懂「机器人怎么动」
+   mm2 ViT→CLIP→LLaVA → vla1 什么是 VLA → vla2 动作生成发动机（Diffusion Policy / Flow Matching）
+   → pp2 Diffusion Policy 精读 → vla3 π 系列 → vla9 Octo（通用策略 + 可微调）
+
+④ 想懂「模型怎么被练出来」
+   sys2 Ring Attention 长序列训练 → sys4 知识蒸馏 → rl1 分布式 RL 训练（PPO / GRPO / RLHF）
+```
 
 ---
 
-*生成时间：2026-07-31 · 依据前序对话中已核实的 DFlash（Z Lab+SGLang+Modal 2026-06-15）、DSpark（DeepSeek+北大 2026-06-27）、OpenInfer Qwen3-4B 双后端支持等素材整理。*
+## 4. 新增一篇文章的 SOP（照做即可，别漏步）
+
+1. **写中文版** `src/pages/blog/<slug>.md`（按第 1 节 frontmatter 模板）。
+2. **写英文版** `src/pages/en/blog/<slug>.md`（title/description 双引号规则、layout 多一层 `../`）。
+3. **首页注册（两处都要）**：
+   - `src/pages/index.astro` → 找到对应 `const <系列> = [...]`，追加一条 `{ href: base + 'blog/<slug>', title: '（N）标题', date: 'YYYY-MM-DD' }`；
+   - `src/pages/en/index.astro` → 同一系列数组（注意 `sysn` / `agn` / `rln` 这类改名）追加英文条目。
+4. **同步系列描述**：更新该系列 `<p class="series-tag">` 的**篇数**（`共 N 篇` / `Series · N episodes`）与主线段落，把新篇补进"循序渐进"链条里。
+5. **若新增系列**：两个 index 都要加 `const` 数组 + `<h2>`/`series-tag`/`<ul>` 区块，并更新 `<p class="lead">` 的"N 大系列"计数与列举。
+6. **构建**：
+   ```bash
+   cd spec-decode-blog && export CODEBUDDY_SAFE_DELETE_ENABLED=0 && npm run build
+   ```
+   （不设该变量会在清理阶段被 `checkBulkDeleteGuard` 拦下。）构建后确认新 slug 的 `dist/blog/...` 与 `dist/en/blog/...` 均已生成。
+7. **提交推送**：
+   ```bash
+   git add -A && git commit -m "<前缀>: <标题> 中英双版 + 首页注册"
+   GIT_SSH_COMMAND="ssh -o BatchMode=yes -o ConnectTimeout=20" git push origin main
+   git ls-remote origin main   # 比对 HEAD 确认推送成功
+   ```
+
+---
+
+## 5. 待补清单（下一批候选）
+
+**VLA 系列（vla10+）**
+- π0.5 / π0.7 的层级推理（高层语言子目标 + 低层动作）
+- GRPO / RLAIF 做 VLA 偏好对齐的完整案例（与 rl 系列联动）
+
+**强化学习训练手记（rl2+）**
+- GRPO 深入：去掉 Critic 之后优势估计的方差控制
+- Rollout 引擎对比：vLLM vs SGLang 作为 RL rollout 的取舍
+- 异步 RL（AReaL 路线）与 replay buffer 设计
+- Agentic RL：把工具调用纳入 rollout 的工程问题
+
+**前沿架构（fa9+）**
+- 长上下文推理的稀疏注意力量化对比
+
+**系统（sys11+）**
+- PD 分离在生产环境的实例配比实测
+
+---
+
+## 6. 已知的写作口径
+
+- 每篇结尾放「系列导航」，用绝对路径链到相关篇目（中文版链中文，英文版链英文）。
+- 图表用**手写 SVG**（`<div class="fig">` + `<svg viewBox="0 0 680 H">` + `<p class="cap">`），不使用外部图片。
+- 公式放代码块（`text` / `python`），避免在 markdown 里写裸露的 `$` 数学。
+- 代码块给"能跑的骨架"，不给伪代码占位符。
+- 投资相关内容只做产业映射，篇末必带免责声明。

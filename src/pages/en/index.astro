@@ -40,6 +40,7 @@ const vla = [
   { href: base + 'en/blog/vla6-rt1-discrete-action', title: "(6) RT-1's Discrete-Action Route — TokenLearner, Causal Mask, and Cross-Entropy", date: '2026-08-07' },
   { href: base + 'en/blog/vla7-vjepa2', title: '(7) V-JEPA 2: Self-Supervised Video World Models and Zero-Shot Robot Planning', date: '2026-08-26' },
   { href: base + 'en/blog/vla8-dreamer-v3', title: '(8) Dreamer V3: One Set of Hyperparameters Across 50+ Domains', date: '2026-08-26' },
+  { href: base + 'en/blog/vla9-octo', title: '(9) Octo: A 27M Generalist Robot Policy and What Fine-Tunable Really Means', date: '2026-09-11' },
 ];
 const fa = [
   { href: base + 'en/blog/fa1-overview', title: '(1) The 2026 Frontier Overview — the Impossible Triangle of Long-Context × Efficiency × Scale', date: '2026-08-06' },
@@ -77,6 +78,9 @@ const sysn = [
 ];
 const agn = [
   { href: base + 'en/blog/ag1-agent-knowledge-system', title: '(1) The Agent Knowledge System — capability stack, context engineering, and inference rebuilt for Agentic workloads', date: '2026-09-08' },
+];
+const rln = [
+  { href: base + 'en/blog/rl1-distributed-rl-training', title: '(1) Distributed RL Training: Running PPO / GRPO From One GPU to a Cluster', date: '2026-09-11' },
 ];
 const hotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const hot = Object.entries(hotMods)
@@ -121,7 +125,7 @@ const hot = Object.entries(hotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge lang="en" />
-      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; eleven key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Inference Systems Infrastructure Notes, Agent Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) keep growing, with most posts bilingual.</p>
+      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; twelve key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Inference Systems Infrastructure Notes, RL Training Notes, Agent Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) keep growing, with most posts bilingual.</p>
 
       <h2>Speculative Decoding Notes</h2>
       <p class="series-tag">Series · 8 episodes, in order: fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 (why the feature constraint is a scaling lock) → MTP & confidence heads (three self-draft routes chained) → DFlash 2 upgrade and the meta-question of why frameworks don't just combine them. Each post has a Chinese counterpart.</p>
@@ -173,7 +177,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>VLA Decoding Notes</h2>
-      <p class="series-tag">Series · 6 episodes, in order: from "see" to "act" (what VLA is) → the action engine (Diffusion Policy / Flow Matching / Action Chunking / low latency) → the π family (π0→π0.7) → domestic players (Ant Lingbo / Xiaomi / Tencent) → world models & deployment (data flywheel / scaling bottleneck / investment view) → RT-1's discrete-action route (TokenLearner / causal mask / cross-entropy). A natural extension of the LLaVA piece in Multimodal Decoding Notes (2) into the robot's "act" capability, each with a Chinese counterpart.</p>
+      <p class="series-tag">Series · 9 episodes, in order: from "see" to "act" (what VLA is) → the action engine (Diffusion Policy / Flow Matching / Action Chunking / low latency) → the π family (π0→π0.7) → domestic players (Ant Lingbo / Xiaomi / Tencent) → world models & deployment (data flywheel / scaling bottleneck / investment view) → RT-1's discrete-action route (TokenLearner / causal mask / cross-entropy) → V-JEPA 2 self-supervised video world models → Dreamer V3 world-model RL → Octo (a 27M generalist robot policy that turns fine-tuning to new embodiments into an engineering problem). A natural extension of the LLaVA piece in Multimodal Decoding Notes (2) into the robot's "act" capability, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {vla.map((p) => (
           <li>
@@ -184,7 +188,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>Frontier Architecture Decoding Notes</h2>
-      <p class="series-tag">Series · 7 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%) → Qwen3.8 dual checkpoints (dense 27B vs sparse Flash-Next, 360GB of weights for 6B activations) → the Qwen3.8 family in one frame (2.4T-A95B flagship / Flash serving build / Flash-Next architecture preview, 125B MoE + 51B N-gram at 6B active per token). The attention-reshape controlled experiments strung into one arc: dense → sparse → compressed attention, all converging on sparse MoE at scale, each with a Chinese counterpart.</p>
+      <p class="series-tag">Series · 8 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%) → Qwen3.8 dual checkpoints (dense 27B vs sparse Flash-Next, 360GB of weights for 6B activations) → the Qwen3.8 family in one frame (2.4T-A95B flagship / Flash serving build / Flash-Next architecture preview, 125B MoE + 51B N-gram at 6B active per token). The attention-reshape controlled experiments strung into one arc: dense → sparse → compressed attention, all converging on sparse MoE at scale, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {fa.map((p) => (
           <li>
@@ -224,6 +228,14 @@ const hot = Object.entries(hotMods)
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>
           </li>
+        ))}
+      </ul>
+
+      <h2>RL Training Notes</h2>
+      <p class="series-tag">Series · 1 episode (opening, ongoing). Filling a gap the site previously had: the training-side infrastructure shared by LLMs and robots. The opening post covers distributed RL training — why RLHF cannot run as a single-process pot of everything (rollout eats roughly 80% of a PPO step), how the Actor / Critic / Reference / Reward roles decouple onto separate GPU pools, how vLLM or SGLang serves as the rollout engine, the PPO and GRPO objectives and the price of deleting the Critic, the two weight-sync paths (Ray Object Store vs NCCL broadcast), and how the same stack serves both text RLHF and robot VLA RLAIF. Complements the inference-side optimization in Inference Systems Infrastructure Notes, each post with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {rln.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
 

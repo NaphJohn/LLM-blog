@@ -40,6 +40,7 @@ const vla = [
   { href: base + 'blog/vla6-rt1-discrete-action', title: '（六）RT-1 的离散动作路线：TokenLearner、因果掩码与交叉熵', date: '2026-08-07' },
   { href: base + 'blog/vla7-vjepa2', title: '（七）V-JEPA 2：视频自监督世界模型与零样本机器人规划', date: '2026-08-26' },
   { href: base + 'blog/vla8-dreamer-v3', title: '（八）Dreamer V3：一套超参横扫 50+ 域的世界模型 RL', date: '2026-08-26' },
+  { href: base + 'blog/vla9-octo', title: '（九）Octo：27M 参数的通用机器人策略，以及「能微调」这件事', date: '2026-09-11' },
 ];
 const fa = [
   { href: base + 'blog/fa1-overview', title: '（一）2026 前沿大模型总览：长上下文 × 效率 × 规模化 的不可能三角', date: '2026-08-06' },
@@ -77,6 +78,9 @@ const sys = [
 ];
 const ag = [
   { href: base + 'blog/ag1-agent-knowledge-system', title: '（一）Agent 知识体系——能力栈、上下文工程与 Agentic 负载下的推理重构', date: '2026-09-08' },
+];
+const rl = [
+  { href: base + 'blog/rl1-distributed-rl-training', title: '（一）分布式 RL 训练——PPO / GRPO 怎么从单卡跑到多机', date: '2026-09-11' },
 ];
 const aihotMods = import.meta.glob('./blog/aihot-*.md', { eager: true }) as Record<string, any>;
 const aihot = Object.entries(aihotMods)
@@ -140,7 +144,7 @@ const aihot = Object.entries(aihotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge />
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十一大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、智能体手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十二大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、强化学习训练手记、智能体手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
 
       <h2>推测解码手记</h2>
       <p class="series-tag">系列 · 共 8 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3（feature 约束的 scaling 枷锁）→ MTP 与置信度头（三条自草稿路线串链）→ DFlash 2 升级与"为何框架不直接组合"的元问题。每篇附英文对照。</p>
@@ -183,7 +187,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>VLA 解码手记</h2>
-      <p class="series-tag">系列 · 共 6 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 9 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）→ V-JEPA 2 视频自监督世界模型 → Dreamer V3 世界模型 RL → Octo（27M 通用机器人策略，把"可微调到新本体"做成工程问题）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
       <ul class="post-list">
         {vla.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
@@ -191,7 +195,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>前沿架构解码手记</h2>
-      <p class="series-tag">系列 · 共 7 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）→ Qwen3.8 三版本同框（2.4T-A95B 旗舰 / Flash 服务版 / Flash-Next 架构预览，125B MoE + 51B N-gram 每激活 6B）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 稀疏 MoE 大容量，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 8 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）→ Qwen3.8 三版本同框（2.4T-A95B 旗舰 / Flash 服务版 / Flash-Next 架构预览，125B MoE + 51B N-gram 每激活 6B）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 稀疏 MoE 大容量，每篇附英文对照。</p>
       <ul class="post-list">
         {fa.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
@@ -218,6 +222,14 @@ const aihot = Object.entries(aihotMods)
       <p class="series-tag">系列 · 共 3 篇。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
       <ul class="post-list">
         {tr.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2>强化学习训练手记</h2>
+      <p class="series-tag">系列 · 共 1 篇（开篇，持续更新）。补上站内此前缺失的一块：大模型与机器人共用的「训练侧」基础设施。开篇讲分布式 RL 训练——为什么 RLHF 不能单进程一锅炖（rollout 占一个 PPO step 约 80% 时间）、Actor / Critic / Reference / Reward 四角色怎么解耦到独立 GPU 池、vLLM 或 SGLang 如何充当 Rollout Engine、PPO 与 GRPO 的损失公式与「去掉 Critic」的代价、Weight Sync 的 Ray Object Store 与 NCCL 两条路径，以及它如何同时服务文本 RLHF 与机器人 VLA 的 RLAIF。与「推理系统基础设施手记」的推理侧优化互为表里，每篇附英文对照。</p>
+      <ul class="post-list">
+        {rl.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>
