@@ -38,7 +38,7 @@ layout: ../../layouts/BlogPost.astro
 
 ---
 
-## 2. 系列地图（12 个系列，截至 2026-09-11）
+## 2. 系列地图（12 个系列，截至 2026-09-23）
 
 | 前缀 | 系列名 | EN | 篇数 | slug 区间 | 定位 |
 |---|---|---|---|---|---|
@@ -46,14 +46,14 @@ layout: ../../layouts/BlogPost.astro
 | `mm` | 多模态解码手记 | Multimodal Decoding Notes | 5 | mm1–mm5 | 对齐范式 → VLM → 生成模型 → VLA/世界模型 → 高效系统 |
 | `fw` | vLLM 与 SGLang 框架解码手记 | vLLM & SGLang Serving Notes | 9 | fw1–fw9 | 推理引擎原理、前沿对抗、版本演进、选型 |
 | `vla` | VLA 解码手记 | VLA Notes | 9 | vla1–vla9 | 「动手」能力：动作生成 → π 系列 → 国内玩家 → 世界模型 → RT-1 → V-JEPA 2 → Dreamer V3 → **Octo** |
-| `fa` | 前沿架构解码手记 | Frontier Architecture Decoding Notes | 8 | fa1–fa8 | Kimi K3 / MiniMax M3 / DeepSeek V4 / Qwen3.8 双 checkpoint / 三版本同框 |
+| `fa` | 前沿架构解码手记 | Frontier Architecture Decoding Notes | 8 | fa1–fa8 | Kimi K3 / MiniMax M3 / DeepSeek V4 / **Mamba 混合状态 + PD 分离** / Gated DeltaNet / Qwen3.8 双 checkpoint / 三版本同框（注：fa5 曾漏登记首页，2026-09-23 已补） |
 | `op` | 算子讲解手记 | Operator Notes | 2 | op1–op2 | MLA 算子逐行伪代码、模型量化部署谱系 |
 | `pp` | 论文科普手记 | Paper Primer Notes | 2 | pp1–pp2 | Transformer 精读、Diffusion Policy 精读 |
-| `tr` | 社区跟踪手记 | Community Tracker Notes | 3 | tr1–tr3 | vLLM/SGLang 上游 commit 的时间切片 |
-| `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 10 | sys1–sys10 | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 |
+| `tr` | 社区跟踪手记 | Community Tracker Notes | 3 | tr1–tr3 | vLLM/SGLang 上游 commit 的时间切片（**停在 tr3 / 08-11**；此后社区跟踪并入 `aihot` 日报，注意避免同期内容双挂） |
+| `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 11 | sys1–sys11 | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 → DCP / PD 分离 → HiCache L2 昆仑芯调优 |
 | `rl` | 强化学习训练手记 | RL Training Notes | 1 | rl1– | **训练侧**：分布式 RL 训练 / PPO·GRPO / RLHF 基础设施 |
 | `ag` | 智能体手记 | Agent Notes | 1 | ag1– | Agent 能力栈、上下文工程、Agentic 负载下的推理重构 |
-| `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 18+ | aihot-YYYYMMDD | 自动聚合（`import.meta.glob`），无需在首页手写注册 |
+| `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 24 | aihot-YYYYMMDD | 自动聚合（`import.meta.glob`），无需在首页手写注册；最新 aihot-20260921 |
 
 **首页系列顺序（当前）**：`ep → mm → fw → sys → ag → vla → fa → op → pp → tr → rl → aihot`
 
