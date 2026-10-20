@@ -1,5 +1,6 @@
 ---
 import SiteHeader from '../components/SiteHeader.astro';
+import { getAdjacent, buildHref } from '../lib/posts.js';
 
 // Astro 5: markdown frontmatter is nested under Astro.props.frontmatter
 const { frontmatter } = Astro.props;
@@ -14,6 +15,16 @@ const {
 } = frontmatter;
 const base = import.meta.env.BASE_URL;
 const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
+
+// 当前文章 slug（从路径推导，避免依赖 frontmatter 之外的字段）
+const pathname = Astro.url.pathname;
+let _rel = pathname;
+if (_rel.startsWith(base)) _rel = _rel.slice(base.length);
+_rel = _rel.replace(/^\/+/, '').replace(/\/+$/, '');
+const slug = _rel.replace(/^(en\/)?blog\//, '');
+
+// 同系列上一篇 / 下一篇（按 (lang, series) 分组、pubDate + slug 数字排序）
+const adj = getAdjacent(lang, series, slug);
 ---
 
 <!doctype html>
@@ -54,6 +65,27 @@ const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
         opacity: 0.08;
       }
     </style>
+    <style is:global>
+      /* 系列阅读导航：上一篇 / 下一篇 */
+      .post-nav { display: flex; gap: 12px; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border); }
+      .post-nav a {
+        display: flex; align-items: center; gap: 10px; flex: 1 1 0; min-width: 0;
+        padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px;
+        text-decoration: none; color: var(--fg); background: var(--bg);
+        transition: border-color .15s ease, color .15s ease, background-color .15s ease;
+      }
+      .post-nav a:hover { border-color: var(--accent); color: var(--accent); }
+      .post-nav-next { margin-left: auto; text-align: right; }
+      .post-nav .pn-text { display: flex; flex-direction: column; min-width: 0; }
+      .post-nav .pn-label { font-size: 12px; color: var(--muted); }
+      .post-nav .pn-title { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .post-nav .pn-ico { font-size: 18px; color: var(--accent); flex: none; }
+      :root[data-theme="dark"] .post-nav a { background: #0d1117; }
+      @media (max-width: 560px) {
+        .post-nav { flex-direction: column; }
+        .post-nav-next { margin-left: 0; text-align: left; }
+      }
+    </style>
   </head>
   <body>
     <SiteHeader lang={lang} altLang={altLang} altHref={altHref} series={series} />
@@ -64,6 +96,29 @@ const giscusLang = lang === 'zh' ? 'zh-CN' : 'en';
       <article class="prose" id="post-content">
         <slot />
       </article>
+
+      {(adj.prev || adj.next) && (
+        <nav class="post-nav" aria-label="系列文章导航">
+          {adj.prev && (
+            <a class="post-nav-prev" href={buildHref(base, lang, adj.prev.slug)}>
+              <span class="pn-ico" aria-hidden="true">←</span>
+              <span class="pn-text">
+                <span class="pn-label">上一篇</span>
+                <span class="pn-title">{adj.prev.title}</span>
+              </span>
+            </a>
+          )}
+          {adj.next && (
+            <a class="post-nav-next" href={buildHref(base, lang, adj.next.slug)}>
+              <span class="pn-text">
+                <span class="pn-label">下一篇</span>
+                <span class="pn-title">{adj.next.title}</span>
+              </span>
+              <span class="pn-ico" aria-hidden="true">→</span>
+            </a>
+          )}
+        </nav>
+      )}
 
       <section class="engage">
         <div class="engage-actions">
