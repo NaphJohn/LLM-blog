@@ -103,7 +103,9 @@ const adj = getAdjacent(lang, series, slug);
             <a class="post-nav-prev" href={buildHref(base, lang, adj.prev.slug)}>
               <span class="pn-ico" aria-hidden="true">←</span>
               <span class="pn-text">
-                <span class="pn-label">上一篇</span>
+                <span class="pn-label">
+                  {adj.prev.cross ? `上一篇 · ${adj.prev.series}` : '上一篇'}
+                </span>
                 <span class="pn-title">{adj.prev.title}</span>
               </span>
             </a>
@@ -111,7 +113,9 @@ const adj = getAdjacent(lang, series, slug);
           {adj.next && (
             <a class="post-nav-next" href={buildHref(base, lang, adj.next.slug)}>
               <span class="pn-text">
-                <span class="pn-label">下一篇</span>
+                <span class="pn-label">
+                  {adj.next.cross ? `下一篇 · ${adj.next.series}` : '下一篇'}
+                </span>
                 <span class="pn-title">{adj.next.title}</span>
               </span>
               <span class="pn-ico" aria-hidden="true">→</span>

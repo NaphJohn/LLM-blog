@@ -91,16 +91,64 @@ function leadingNum(slug) {
   return m ? parseInt(m[0], 10) : -1;
 }
 
-// 给定当前文章的 (lang, series, slug)，返回同系列相邻篇目
+// 系列阅读顺序（对齐首页板块排列）。
+// 跨系列串联：系列末篇的「下一篇」接下一系列首篇，系列首篇的「上一篇」接上一系列末篇。
+// 「每日AI热点」是时效新闻流（40+ 期、持续追加），刻意不参与跨系列串联，
+// 只保留系列内按日期的 prev/next；未列出的系列同样不跨链。
+const SERIES_ORDER = {
+  zh: [
+    '推测解码手记',
+    '多模态解码手记',
+    'vLLM 与 SGLang 框架解码手记',
+    '推理系统基础设施手记',
+    '智能体手记',
+    'VLA 解码手记',
+    '前沿架构解码手记',
+    '算子讲解手记',
+    '论文科普手记',
+    '社区跟踪手记',
+    '强化学习训练手记',
+  ],
+  en: [
+    'Speculative Decoding Notes',
+    'Multimodal Decoding Notes',
+    'vLLM & SGLang Serving Notes',
+    'Inference Systems Infrastructure Notes',
+    'Agent Notes',
+    'VLA Decoding Notes',
+    'VLA Notes',
+    'Frontier Architecture Decoding Notes',
+    'Operator Notes',
+    'Operator Explainers',
+    'Paper Primer Notes',
+    'Community Tracker Notes',
+    'RL Training Notes',
+  ],
+};
+
+// 给定当前文章的 (lang, series, slug)，返回相邻篇目。
+// 系列内优先；系列首/末篇跨界接上一/下一系列（cross 标记供模板区分展示）。
 export function getAdjacent(lang, series, slug) {
   const key = lang + '||' + (series || '');
   const group = GROUPS[key] || [];
   const idx = group.findIndex((p) => p.slug === slug);
   if (idx === -1) return { prev: null, next: null };
-  return {
-    prev: idx > 0 ? group[idx - 1] : null,
-    next: idx < group.length - 1 ? group[idx + 1] : null,
-  };
+  let prev = idx > 0 ? { ...group[idx - 1], cross: false } : null;
+  let next = idx < group.length - 1 ? { ...group[idx + 1], cross: false } : null;
+
+  const order = SERIES_ORDER[lang] || [];
+  const rank = order.indexOf(series || '');
+  if (rank !== -1) {
+    if (!next && rank < order.length - 1) {
+      const ng = GROUPS[lang + '||' + order[rank + 1]];
+      if (ng && ng.length) next = { ...ng[0], cross: true };
+    }
+    if (!prev && rank > 0) {
+      const pg = GROUPS[lang + '||' + order[rank - 1]];
+      if (pg && pg.length) prev = { ...pg[pg.length - 1], cross: true };
+    }
+  }
+  return { prev, next };
 }
 
 // 与站内其他链接保持一致的 URL 写法（不含尾部斜杠，由 Astro 解析）
