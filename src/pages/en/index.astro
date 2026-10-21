@@ -56,6 +56,7 @@ const fa = [
 const op = [
   { href: base + 'en/blog/op1-mla-operator', title: '(1) MLA Operator-Level — c_kv / W_DKV / W_UK / W_UV Line-by-Line Pseudocode', date: '2026-08-07' },
   { href: base + 'en/blog/op2-model-quantization', title: '(2) Model Quantization for Deployment — the precision-compression spectrum from FP16 to FP4', date: '2026-09-08' },
+  { href: base + 'en/blog/op3-eagleqbsa', title: '(3) Ascend EagleQBSA — Quantized × Sparse Joint Attention: the distribution-aware INT8 QK / FP8 PV recipe and Ascend 950 Vector-side tuning (up to 7.6× on attention modules)', date: '2026-10-21' },
 ];
 const pp = [
   { href: base + 'en/blog/pp1-transformer', title: '(1) Transformer Deep Read — Replacing Recurrence with Attention, Making Sequence Modeling Parallel', date: '2026-08-12' },
@@ -203,7 +204,7 @@ const hot = Object.entries(hotMods)
       </ul>
 
       <h2>Operator Notes</h2>
-      <p class="series-tag">Series · 2 episodes (ongoing). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; episode two is model quantization for deployment (FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache quantization); later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
+      <p class="series-tag">Series · 3 episodes (ongoing). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; episode two is model quantization for deployment (FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache quantization); episode three is Ascend EagleQBSA quantized × sparse joint attention (the distribution-aware recipe of per-block INT8 QK plus per-channel FP8 V/P, Cube-to-Vector transfer with transpose and columnized Softmax reduction, up to 7.6× on attention modules); later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {op.map((p) => (
           <li>

@@ -56,6 +56,7 @@ const fa = [
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
   { href: base + 'blog/op2-model-quantization', title: '（二）模型量化部署——从 FP16 到 FP4 的精度压缩谱系（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化）', date: '2026-09-08' },
+  { href: base + 'blog/op3-eagleqbsa', title: '（三）昇腾 EagleQBSA——量化×稀疏联合注意力：QK INT8 / PV FP8 分布感知配方与昇腾 950 Vector 侧优化（整网最高 7.6×）', date: '2026-10-21' },
 ];
 const pp = [
   { href: base + 'blog/pp1-transformer', title: '（一）Transformer 精读：用「注意力」取代循环，把序列建模变成可并行计算', date: '2026-08-12' },
@@ -207,7 +208,7 @@ const aihot = Object.entries(aihotMods)
       </ul>
 
       <h2>算子讲解手记</h2>
-      <p class="series-tag">系列 · 共 2 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，第二篇模型量化部署（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化），后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 3 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，第二篇模型量化部署（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化），第三篇昇腾 EagleQBSA 量化×稀疏联合注意力（QK 按块 INT8 + V/P 按通道 FP8 的分布感知配方、Cube→Vector 直搬转置与 Softmax 归约列化，整网注意力最高 7.6×），后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
       <ul class="post-list">
         {op.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
