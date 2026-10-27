@@ -66,6 +66,8 @@ const qt = [
   { href: base + 'blog/qt3-smoothquant-awq', title: '（三）SmoothQuant 与 AWQ——激活 outlier 的两条相反解法', date: '2026-10-27' },
   { href: base + 'blog/qt4-quarot-spinquant', title: '（四）QuaRot / SpinQuant / DuQuant——用旋转把 outlier 摊平，W4A4 的唯一出路', date: '2026-10-27' },
   { href: base + 'blog/qt5-kv-cache-fp4', title: '（五）KV Cache 量化与 FP4 前沿——一条正交的压缩维度', date: '2026-10-27' },
+  { href: base + 'blog/qt6-qat-ste-lsq-pact', title: '（六）QAT 与量化感知训练——STE 的不严谨之处、PACT 与 LSQ 两种修法', date: '2026-10-27' },
+  { href: base + 'blog/qt7-quantization-boundaries', title: '（七）量化的三个边界——投机解码、MLA 结构与端侧硬件', date: '2026-10-27' },
 ];
 const pp = [
   { href: base + 'blog/pp1-transformer', title: '（一）Transformer 精读：用「注意力」取代循环，把序列建模变成可并行计算', date: '2026-08-12' },
@@ -299,7 +301,7 @@ const totalBi = totalAll - aihot.length;
       </ul>
 
       <h2 id="s-qt">量化手记</h2>
-      <p class="series-tag">系列 · 共 5 篇，循序渐进：从量化的公分母（一个反量化公式 + 粒度 / 对称性 / 校准三个旋钮）→ RTN 与 GPTQ（W4A16 主线，OBS 误差补偿的完整推导、Cholesky 与惰性批量更新两个工程创新）→ SmoothQuant 与 AWQ（激活 outlier 的两条相反解法：搬走 vs 放大保护）→ QuaRot / SpinQuant / DuQuant（用正交旋转把 outlier 摊平，唯一能到 W4A4 的路线）→ KV Cache 量化与 FP4 前沿（一条与权重量化正交的压缩维度、KIVI 的 per-channel K + per-token V、NVFP4 微缩放如何改写选型）。前三篇讲清「为什么」，后两篇讲清「能到哪」，收尾给 2026 年的硬件决定格式的现实选型表。每篇附英文对照，并与「算子讲解手记（二）」的谱系总表互为索引。</p>
+      <p class="series-tag">系列 · 共 7 篇，循序渐进：从量化的公分母（一个反量化公式 + 粒度 / 对称性 / 校准三个旋钮）→ RTN 与 GPTQ（W4A16 主线，OBS 误差补偿的完整推导、Cholesky 与惰性批量更新两个工程创新）→ SmoothQuant 与 AWQ（激活 outlier 的两条相反解法：搬走 vs 放大保护）→ QuaRot / SpinQuant / DuQuant（用正交旋转把 outlier 摊平，唯一能到 W4A4 的路线）→ KV Cache 量化与 FP4 前沿（一条与权重量化正交的压缩维度、KIVI 的 per-channel K + per-token V、NVFP4 微缩放如何改写选型）→ QAT 与量化感知训练（STE 这个「假装导数为 1」的有偏估计、它的三个已知故障、PACT 与 LSQ 两种修法、完整七步流程）→ 量化的三个边界（投机解码下最优草稿树要变小、MLA 下 KIVI 二分法失效、端侧能否落 NPU 由格式而非位宽决定）。前五篇讲清「为什么」与「能到哪」，第六篇讲「重新训练一个适合 4 bit 的模型」，第七篇向外看约束并收口：硬件决定格式 → 格式决定算法 → 算法只在前两者给定后有优化空间。每篇附英文对照，并与「算子讲解手记（二）」的谱系总表互为索引。</p>
       <ul class="post-list">
         {qt.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>

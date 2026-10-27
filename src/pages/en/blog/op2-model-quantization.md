@@ -1,6 +1,6 @@
 ---
 title: "Operator Explainers (2): Model Quantization — from the precision spectrum to the four routes"
-description: "The index page for the Quantization Notes series (qt1–qt5). Keeps the original precision spectrum, QAT discussion, KV cache notes, and inference-engine checklist, and adds a complete method-lineage table grouping RTN, GPTQ, AWQ, SmoothQuant, QuaRot, SpinQuant, DuQuant, and KIVI into four orthogonal routes with their bit-width ceilings, compute costs, calibration requirements, and which pairs stack. Jump to the note that covers the method you need."
+description: "The index page for the Quantization Notes series (qt1–qt7). Keeps the original precision spectrum, QAT discussion, KV cache notes, and inference-engine checklist, and adds a complete method-lineage table grouping RTN, GPTQ, AWQ, SmoothQuant, QuaRot, SpinQuant, DuQuant, and KIVI into four orthogonal routes with their bit-width ceilings, compute costs, calibration requirements, and which pairs stack. Jump to the note that covers the method you need."
 pubDate: 2026-09-08
 series: Operator Explainers
 lang: en
@@ -21,7 +21,9 @@ This post is the **index**: it gives the full spectrum and the selection checkli
 <strong>qt2 · RTN and GPTQ</strong> — route A "change the rounding", including the full OBS derivation and working GPTQ pseudocode<br>
 <strong>qt3 · SmoothQuant and AWQ</strong> — route B "change the distribution by scaling", two opposite answers to activation outliers<br>
 <strong>qt4 · QuaRot / SpinQuant / DuQuant</strong> — route C "change the distribution by rotation", the only route to W4A4, four insertion points R1–R4<br>
-<strong>qt5 · KV Cache Quantization and FP4</strong> — the orthogonal axis, and how FP8/FP4 formats rewrite the selection logic
+<strong>qt5 · KV Cache Quantization and FP4</strong> — the orthogonal axis, and how FP8/FP4 formats rewrite the selection logic<br>
+<strong>qt6 · QAT and Quantization-Aware Training</strong> — route D "change the training", STE's three known failure modes, and the two repairs in PACT and LSQ<br>
+<strong>qt7 · The Three Boundaries</strong> — stacking with speculative decoding, the MLA/GQA structural special cases, edge int4 and hardware paths
 </div>
 
 ## 1. Precision Spectrum and Compression
@@ -188,6 +190,7 @@ PTQ degrades noticeably at INT4/FP4, which requires QAT:
 
 - **FP4 QAT (the DeepSeek V4 / V4-Flash route)**: fake-quantize the MoE routed expert weights and the CSA indexer's QK path to FP4 — **quantize to FP4 in the forward pass, dequantize back to high precision for compute**, with sampling/rollout using native FP4. Gradients then see the true post-quantization distribution, so deployment matches training.
 - Prerequisites: mixed-precision training (BF16 AMP) plus FP8 KV cache. QAT typically also pairs with the Muon optimizer and tricks like SwiGLU clamping to bring 4-bit degradation into a usable range.
+- **The underlying mechanics**: all QAT rests on STE (the straight-through estimator) — an honest forward pass that really rounds, plus a biased backward pass that pretends the derivative is one. Its three known failure modes (gradients in the saturated region, s's gradient magnitude not scaling with bit width, Adam state built on a pseudo-gradient) are patched by PACT and LSQ respectively. Full derivations, runnable fake-quant code, and the seven-step pipeline are in **qt6**.
 
 ## 7. KV Cache Quantization and Eviction
 
@@ -216,4 +219,4 @@ At long context the bottleneck is not compute but **KV cache memory**. Three ort
 
 **Tying it together**: distillation shrinks capacity, quantization compresses precision, KV eviction cuts length, tiered caching (HiSparse) puts all three into one memory budget — that is the full toolbox for squeezing 70B+ models into single-card long-context serving today.
 
-*Note: this post consolidates the 2026-07-18 (KV Cache quant+evict), 2026-08-01 (FP8/INT4 deploy), and 2026-08-04 (FP4 QAT) daily technical tracks. On 2026-10-27 the deep dives were split into the five-part Quantization Notes series, and this post became the index and lineage table.*
+*Note: this post consolidates the 2026-07-18 (KV Cache quant+evict), 2026-08-01 (FP8/INT4 deploy), and 2026-08-04 (FP4 QAT) daily technical tracks. On 2026-10-27 the deep dives were split into the seven-part Quantization Notes series, and this post became the index and lineage table.*

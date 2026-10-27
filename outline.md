@@ -50,7 +50,7 @@ layout: ../../layouts/BlogPost.astro
 | **一 · 模型与解码算法** | `fa` | 前沿架构解码手记 | Frontier Architecture Decoding Notes | 10 | fa1–fa10 | `#s-fa` | Kimi K3 / MiniMax M3 / DeepSeek V4 / Mamba 混合状态 + PD 分离 / Gated DeltaNet / Qwen3.8 双 checkpoint / 三版本同框 / **残差连接演进** / **MiniMax M3.1 Flash** |
 | | `ep` | 推测解码手记 | Speculative Decoding Notes | 8 | ep1–ep8 | `#s-spec` | 本博客起点：draft/verify → DFlash / DSpark / EAGLE-3 / MTP → DFlash 2 |
 | | `op` | 算子讲解手记 | Operator Notes | 3 | op1–op3 | `#s-op` | MLA 算子逐行伪代码、**模型量化谱系总表（qt 系列导读入口）**、**EAGLE QBSA** |
-| | `qt` | 量化手记 | Quantization Notes | 5 | qt1–qt5 | `#s-qt` | **新增（2026-10-27）**：量化基本语言 → RTN/GPTQ（OBS 推导）→ SmoothQuant/AWQ → QuaRot/SpinQuant/DuQuant（W4A4）→ KV Cache 量化与 FP4 |
+| | `qt` | 量化手记 | Quantization Notes | 7 | qt1–qt7 | `#s-qt` | **新增（2026-10-27）**：量化基本语言 → RTN/GPTQ（OBS 推导）→ SmoothQuant/AWQ → QuaRot/SpinQuant/DuQuant（W4A4）→ KV Cache 量化与 FP4 → **QAT（STE/PACT/LSQ）** → **量化的三个边界（投机解码/MLA/端侧）** |
 | **二 · 推理系统与工程** | `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 12 | sys1–sys12 | `#s-sys` | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 → DCP / PD 分离 → HiCache L2 昆仑芯调优 → **Mooncake** |
 | | `fw` | vLLM 与 SGLang 框架解码手记 | vLLM & SGLang Serving Notes | 10 | fw1–fw10 | `#s-fw` | 推理引擎原理、前沿对抗、版本演进、选型、Wan2.2 / vLLM-Omni、**DeepInfer 生产级推理栈** |
 | **三 · 多模态与具身** | `vla` | VLA 解码手记 | VLA Notes | 9 | vla1–vla9 | `#s-vla` | 「动手」能力：动作生成 → π 系列 → 国内玩家 → 世界模型 → RT-1 → V-JEPA 2 → Dreamer V3 → Octo |
@@ -61,7 +61,7 @@ layout: ../../layouts/BlogPost.astro
 | **五 · 时效跟踪** | `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 43 | aihot-YYYYMMDD | `#s-aihot` | 自动聚合（`import.meta.glob`），无需在首页手写注册 |
 | | `tr` | 社区跟踪手记 | Community Tracker Notes | 3 | tr1–tr3 | `#s-tr` | vLLM/SGLang 上游 commit 的时间切片（**停在 tr3 / 08-11**；此后跟踪并入 `aihot`，注意避免同期内容双挂） |
 
-**合计 112 篇**，其中 69 篇为原创双语长文（112 − 43 篇 aihot）；分类篇数：模型与解码算法 26 / 推理系统与工程 22 / 多模态与具身 16 / 训练与智能体 2 / 时效跟踪 46。
+**合计 114 篇**，其中 71 篇为原创双语长文（114 − 43 篇 aihot）；分类篇数：模型与解码算法 28 / 推理系统与工程 22 / 多模态与具身 16 / 训练与智能体 2 / 时效跟踪 46。
 
 **首页系列顺序（当前，按分类分组）**：`fa → ep → op → qt` ｜ `sys → fw` ｜ `vla → mm → pp` ｜ `rl → ag` ｜ `aihot → tr`
 
@@ -102,6 +102,8 @@ layout: ../../layouts/BlogPost.astro
    → qt3 SmoothQuant vs AWQ（W8A8 与 W4A16 两条路：搬走 outlier vs 放大保护显著通道）
    → qt4 QuaRot / SpinQuant / DuQuant（W4A4 唯一出路：R1–R4 四个旋转位置 + 三代方案）
    → qt5 KV Cache 量化与 FP8/FP4（正交维度：KIVI、residual window、NVFP4 微缩放、2026 选型表）
+   → qt6 QAT 与量化感知训练（唯一「权重会动」的一篇：STE 三个故障 → PACT / LSQ 两种修法 → 七步流程）
+   → qt7 量化的三个边界（投机解码下草稿树要变小、MLA 下 KIVI 失效、端侧格式决定 NPU 通路）
    横向索引看 op2 的「量化方法谱系总表」（按「改什么」分四条路线 + 上限位宽 + 可叠加性）
 ```
 
@@ -136,11 +138,11 @@ layout: ../../layouts/BlogPost.astro
 
 ## 5. 待补清单（下一批候选）
 
-**量化手记（qt6+，2026-10-27 起）**
-- 量化感知训练（QAT）完整流程：STE 前向/反向、fake-quant 的 observer 怎么选、LSQ 与 PACT 的可学习截断
-- 端侧原生 int4 的真实收益（Hexagon / ANE / 高通 QNN）：与 GPU 解包再算的差距到底多大
-- 量化与投机解码的交互：草稿模型与目标模型量化位宽不同时的接受率变化（与 ep 系列联动）
-- MLA / GQA 结构下的 KV 量化特例：latent 维度能不能量化、c_kv 压缩与 KV4 的叠加边界（与 op1、fa4 联动）
+**量化手记（qt8+，2026-10-27 起）**
+- 混合精度量化：哪些层该保 FP8/FP16 的自动搜索（敏感度分析 vs 搜索）
+- 量化 + 稀疏叠加：昇腾 EagleQBSA 之后还有哪些组合（与 op3 联动）
+- 连续 batch 下 per-token 激活 scale 的重算开销实测
+- 量化模型的蒸馏补偿：用 FP16 教师修 4 bit 学生的 logits 差距
 
 **VLA 系列（vla10+）**
 - π0.5 / π0.7 的层级推理（高层语言子目标 + 低层动作）

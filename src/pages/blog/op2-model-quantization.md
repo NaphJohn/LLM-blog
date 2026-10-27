@@ -1,6 +1,6 @@
 ---
 title: '算子讲解手记（二）：模型量化——从精度谱系到四条路线的总览'
-description: '量化手记系列（qt1–qt5）的导读入口。保留原有的精度谱系表、QAT 路线、KV Cache 与推理引擎落地清单，另外补一张完整的「量化方法谱系总表」——把 RTN / GPTQ / AWQ / SmoothQuant / QuaRot / SpinQuant / DuQuant / KIVI 按「改什么」分成四条路线，标清各自的上限位宽、计算成本、校准需求，以及哪两两可以叠加。想深入某一个方法，直接跳到对应手记。'
+description: '量化手记系列（qt1–qt7）的导读入口。保留原有的精度谱系表、QAT 路线、KV Cache 与推理引擎落地清单，另外补一张完整的「量化方法谱系总表」——把 RTN / GPTQ / AWQ / SmoothQuant / QuaRot / SpinQuant / DuQuant / KIVI 按「改什么」分成四条路线，标清各自的上限位宽、计算成本、校准需求，以及哪两两可以叠加。想深入某一个方法，直接跳到对应手记。'
 pubDate: 2026-09-08
 series: 算子讲解手记
 lang: zh
@@ -13,7 +13,7 @@ layout: ../../layouts/BlogPost.astro
 
 模型量化是"用精度换显存/带宽/算力"的艺术——它和**蒸馏**（用容量换体积）是正交的两件事，可以叠加（先蒸馏小模型再量化部署）。
 
-本篇是**导读**：给出全景谱系和选型清单，具体方法展开在「量化手记」系列五篇里。
+本篇是**导读**：给出全景谱系和选型清单，具体方法展开在「量化手记」系列七篇里。
 
 <div class="keybox">
 <strong>系列索引：</strong><br>
@@ -21,7 +21,9 @@ layout: ../../layouts/BlogPost.astro
 <strong>qt2 · RTN 与 GPTQ</strong>——A 路线「只改舍入」，含 OBS 框架完整推导与 GPTQ 伪代码<br>
 <strong>qt3 · SmoothQuant 与 AWQ</strong>——B 路线「改分布·缩放」，激活 outlier 的两条相反解法<br>
 <strong>qt4 · QuaRot / SpinQuant / DuQuant</strong>——C 路线「改分布·旋转」，W4A4 的唯一出路，四个插入位置 R1–R4<br>
-<strong>qt5 · KV Cache 量化与 FP4</strong>——正交维度，以及 FP8/FP4 格式如何改变选型逻辑
+<strong>qt5 · KV Cache 量化与 FP4</strong>——正交维度，以及 FP8/FP4 格式如何改变选型逻辑<br>
+<strong>qt6 · QAT 与量化感知训练</strong>——D 路线「改训练」，STE 的三个已知故障、PACT 与 LSQ 两种修法<br>
+<strong>qt7 · 量化的三个边界</strong>——与投机解码叠加、MLA/GQA 结构特例、端侧 int4 与硬件通路
 </div>
 
 ## 1. 精度谱系与压缩比
@@ -191,6 +193,7 @@ PTQ 到 INT4/FP4 损失开始变大，需要 QAT：
 
 - **FP4 QAT（DeepSeek V4 / V4-Flash 路线）**：对 MoE 的 routed expert 权重和 CSA indexer 的 QK 路径做 FP4 伪量化——**训练时伪量化到 FP4 再反量化回高精度计算**，采样/rollout 用 native FP4。这样梯度看到的是量化后的真实分布，部署即所见。
 - 前置基础：混合精度训练（BF16 AMP）+ FP8 KV Cache。QAT 往往和 Muon 优化器、SwiGLU Clamping 等工程化技巧配合，才能把 4-bit 的掉点压到可用区间。
+- **底层机制**：所有 QAT 都建立在 STE（直通估计器）上——前向真实取整、反向假装导数为 1 的有偏估计。它的三个已知故障（饱和区梯度、s 梯度量级不随位宽变化、Adam 状态建立在伪梯度上）分别由 PACT 与 LSQ 修补。完整推导、可跑的 fake-quant 实现与七步流程见 **qt6**。
 
 ## 7. KV Cache 量化与驱逐：长上下文的显存救命线
 
@@ -219,4 +222,4 @@ PTQ 到 INT4/FP4 损失开始变大，需要 QAT：
 
 **串起来看**：蒸馏缩容量、量化压精度、KV 驱逐砍长度、分层缓存（HiSparse）把三者放进同一显存预算——这就是今天把 70B+ 模型塞进单卡长上下文服务的完整工具箱。
 
-*注：本文整合自 2026-07-18（KV Cache 量化与驱逐）、2026-08-01（FP8/INT4 部署）、2026-08-04（FP4 QAT）的每日技术追踪；2026-10-27 拆出「量化手记」五篇独立展开，本篇改为导读与谱系总表。*
+*注：本文整合自 2026-07-18（KV Cache 量化与驱逐）、2026-08-01（FP8/INT4 部署）、2026-08-04（FP4 QAT）的每日技术追踪；2026-10-27 拆出「量化手记」七篇独立展开，本篇改为导读与谱系总表。*
