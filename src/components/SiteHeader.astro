@@ -5,12 +5,15 @@ const base = import.meta.env.BASE_URL; // 项目页子路径，如 /LLM-blog/
 const homeHref = lang === 'zh' ? base : base + 'en/';
 const seriesHref = homeHref;
 const altHrefFull = altHref ? base + altHref.replace(/^\//, '') : undefined;
+const panHref = lang === 'zh' ? base + 'panorama/' : base + 'en/panorama/';
+const panLabel = lang === 'zh' ? '全景' : 'Panorama';
 ---
 
 <header class="site-header">
   <a href={homeHref} class="brand">{siteName}</a>
   <nav>
     {series && <a href={seriesHref}>{series}</a>}
+    <a href={panHref} class="pan-link">{panLabel}</a>
     {altHrefFull ? (
       <span class="lang-switch">
         {lang === 'zh'

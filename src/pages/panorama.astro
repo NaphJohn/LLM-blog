@@ -1,0 +1,491 @@
+---
+import SiteHeader from '../components/SiteHeader.astro';
+
+const base = import.meta.env.BASE_URL;
+
+// 一条请求的七个阶段
+const stages = [
+  {
+    id: 's1',
+    name: '入口与协议',
+    short: 'API 进来',
+    q: '三种 API 协议怎么统一？用户输入里的对话符怎么不被当控制 token？',
+    desc: '请求先经兼容前门做协议归一化：OpenAI Chat Completions / OpenAI Responses / Anthropic Messages 统一成内部 Conversation 结构，再按模型版本渲染 prompt、挂 tokenizer 编码成 token ids。此处的关键不是分词，而是**普通文本与真正控制 token 的区分**——用户输入里字面出现的起止符必须仍按普通文字处理。',
+    cost: '毫秒级 CPU 开销，但做错会在长文本上出精度事故',
+    posts: [
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：deepseek-recipe 与三种协议归一化' },
+      { href: base + 'blog/fw1-why-inference-engine', title: '为什么需要推理引擎：朴素推理的三道墙' },
+    ],
+  },
+  {
+    id: 's2',
+    name: '调度与批处理',
+    short: '排批次',
+    q: 'continuous batching 怎么排？CPU 排队的空隙怎么藏进 GPU 计算里？',
+    desc: '调度器决定这一轮做 Prefill 还是 Decode、推进哪些序列、预留哪些缓存块，并记录「已提交但结果未回收」的在途 token，让下一轮提前调度有据可依。**异步调度**把 CPU 的排批与后处理和 GPU 的前向重叠：设备算第 N 步时 CPU 已排第 N+1 步。这就是所谓的零开销批调度器。',
+    cost: '调度空隙在低并发时能吃掉 20% 以上吞吐',
+    posts: [
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：零开销批调度器与 DeferredRelease' },
+      { href: base + 'blog/fw2-vllm-internals', title: 'vLLM 原理：分页 KV 与 Model Runner V2' },
+      { href: base + 'blog/fw3-sglang-internals', title: 'SGLang 原理：RadixAttention 与前缀复用' },
+      { href: base + 'blog/ag1-agent-knowledge-system', title: 'Agent 负载如何把缓存问题变成调度问题' },
+    ],
+  },
+  {
+    id: 's3',
+    name: '前缀复用与缓存',
+    short: '找缓存',
+    q: '这段前缀算过吗？存在哪一层——HBM、DRAM 还是 SSD？',
+    desc: '命中前缀就跳过重复计算，这是长上下文与多轮对话最直接的省算法。难点在分层：HBM 快但小，Host DRAM 大但慢，SSD 更大但极慢。**每一层放什么，取决于数据活多久，而不是容量还剩多少**——DeepInfer 的 SWA 状态 TTL 只有 180 秒，就不该占持久层。',
+    cost: '长上下文场景下缓存命中率直接决定 TTFT',
+    posts: [
+      { href: base + 'blog/sys9-kv-cache-fundamentals-optimization', title: 'KV Cache 全景：它为什么同时决定吞吐、延迟和并发' },
+      { href: base + 'blog/sys10-kv-cache-engineering-sglang-vllm-attentionstore', title: 'KV Cache 工程实现：两级内存池、Block 管理、AttentionStore' },
+      { href: base + 'blog/sys6-hisparse-hierarchical-kv-cache', title: 'HiSparse：把 HBM 当缓存用，拆掉容量墙' },
+      { href: base + 'blog/sys11-hicache-l2-kunlunxin-tuning', title: 'HiCache L2 昆仑芯调优：TTFT 28.83s → 18.45s' },
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：SWA 分层与 L−134 命中规则' },
+    ],
+  },
+  {
+    id: 's4',
+    name: 'Prefill 与并行切分',
+    short: '算输入',
+    q: '这次输入几万 token，用 TP 还是 EP？P 和 D 要不要拆到不同机器？',
+    desc: 'Prefill 一次处理数万 token，拼的是算力。模型放不下或算不动时，要在 TP（张量）、PP（流水）、EP（专家）、SP/CP（序列/上下文）之间选刀法。**PD 分离**把两阶段拆到不同实例：长输入突增就加 P 资源，并发生成变多就加 D 资源，生产实践 P:D 接近 1:1。',
+    cost: '切分策略选错，要么 OOM，要么通信把收益吃光',
+    posts: [
+      { href: base + 'blog/sys8-parallel-strategies-pd-disaggregation', title: '并行切分策略全景与 PD 分离：五把刀怎么切、怎么配比' },
+      { href: base + 'blog/sys2-ring-attention', title: 'Sequence Parallelism + Ring Attention：把 1M+ Token 训成常态' },
+      { href: base + 'blog/sys7-dcp-decode-context-parallel', title: 'DCP 解码上下文并行：KV 沿序列维度分片' },
+      { href: base + 'blog/sys12-mooncake-kvcache-centric-serving', title: 'Mooncake：以 KVCache 为中心的 PD 分离架构' },
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：Prefill 小而精、Decode Wide-EP 的配比逻辑' },
+    ],
+  },
+  {
+    id: 's5',
+    name: '解码加速',
+    short: '出 token',
+    q: '一次前向能推进几个 token？算子和启动开销压到极限了吗？',
+    desc: 'Decode 每步只出一个 token，时间全花在读权重和缓存上。三条加速路线：**推测解码**（草稿一次提多个、主模型并行验证，猜对几个收几个）、**图模式**（CUDA Graph 消掉 kernel launch 开销）、**低延迟内核**（持久内核 + 依赖启动，把 launch 与跨卡同步次数降到最少）。',
+    cost: '这是整条链上优化空间最大也最容易踩坑的一环',
+    posts: [
+      { href: base + 'blog/ep1-speculative-decoding', title: '推测解码：一次生成多个 token 的无损加速' },
+      { href: base + 'blog/ep4-dspark', title: 'DSpark：半自回归起草 + 马尔可夫头 + 置信度调度' },
+      { href: base + 'blog/ep5-dflash-vs-dspark', title: 'DFlash 与 DSpark 同台对比' },
+      { href: base + 'blog/ep7-mtp-dspark', title: 'MTP Head 与置信度头：三条自草稿路线串链' },
+      { href: base + 'blog/fw7-cuda-graph', title: '图模式：CUDA Graph 原理与两框架实现' },
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：DSpark 变长验证，生成 5 个不等于验证 5 个' },
+    ],
+  },
+  {
+    id: 's6',
+    name: '采样与约束',
+    short: '选词',
+    q: 'logits 怎么采？要让模型必须输出合法 JSON 怎么办？',
+    desc: '前向得到表示后，采样层按生成规则确定输出哪些 token。工程上还有两件硬需求：**结构化输出**（Regex / JSON Schema / EBNF 在解码期约束，而不是生成完再解析）和**可复现性**（batch-invariant 让单条请求结果不随同批次其他请求变化，确定性采样让相同输入产出完全相同输出——对账、审计、回归测试全靠这个）。',
+    cost: '约束解码做在解码期几乎免费，做在后处理既慢又要兜底',
+    posts: [
+      { href: base + 'blog/fw3-sglang-internals', title: 'SGLang 原理：结构化输出的压缩状态机' },
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：Batch-Invariant 与确定性采样（仅 NVIDIA）' },
+      { href: base + 'blog/op2-model-quantization', title: '模型量化：低精度如何影响输出分布' },
+    ],
+  },
+  {
+    id: 's7',
+    name: '返回与流式',
+    short: '送回去',
+    q: '首 token 多久到？流式怎么拼回目标协议格式？',
+    desc: 'TTFT 由 Prefill 与缓存命中决定，TPOT 由 Decode 每步时间决定。输出要流式反解回调用方要的协议格式——包括推理内容、工具调用、JSON 对象、停止序列。**这里最容易漏掉的是资源生命周期**：请求结束和设备不再使用它的存储不是同一时刻，异步调度下尤其要小心。',
+    cost: 'TTFT 是用户唯一能感知的指标，其他都是内部数字',
+    posts: [
+      { href: base + 'blog/fw10-deepinfer', title: 'DeepInfer：DeferredRelease 与流式协议反解' },
+      { href: base + 'blog/fw1-why-inference-engine', title: '核心指标：TTFT / TPOT / 吞吐 / 并发' },
+      { href: base + 'blog/sys12-mooncake-kvcache-centric-serving', title: 'Mooncake：Conductor 全局调度的请求时序' },
+    ],
+  },
+];
+
+// 六层技术栈（自底向上）
+const layers = [
+  {
+    name: 'L5 · 应用与协议',
+    role: '谁在调用、按什么格式调用',
+    items: 'API 兼容层 · 协议归一化 · Agent 编排 · 多轮上下文',
+    posts: ['fw10-deepinfer', 'ag1-agent-knowledge-system', 'fw1-why-inference-engine'],
+    color: '#7c3aed',
+  },
+  {
+    name: 'L4 · 调度与服务',
+    role: '把并发请求排成可持续执行的流水',
+    items: '批调度 · 异步重叠 · 前缀亲和路由 · PD 协调 · 副本负载均衡',
+    posts: ['fw1-why-inference-engine', 'fw2-vllm-internals', 'fw3-sglang-internals', 'sys12-mooncake-kvcache-centric-serving'],
+    color: '#2563eb',
+  },
+  {
+    name: 'L3 · 解码算法',
+    role: '一次前向尽可能多推进几个 token',
+    items: '推测解码 · DFlash / DSpark · MTP · 置信度调度 · 图模式',
+    posts: ['ep1-speculative-decoding', 'ep4-dspark', 'ep7-mtp-dspark', 'fw7-cuda-graph'],
+    color: '#10b981',
+  },
+  {
+    name: 'L2 · 模型执行',
+    role: '权重怎么组织、注意力怎么算',
+    items: '前沿架构 · 稀疏/压缩注意力 · MoE 路由 · 量化',
+    posts: ['fa1-overview', 'fa4-deepseek-v4', 'fa10-minimax-m31-flash', 'op1-mla-operator'],
+    color: '#f59e0b',
+  },
+  {
+    name: 'L1 · 显存与缓存',
+    role: 'KV 存哪、能存多久、怎么搬',
+    items: '分页块管理 · 分层 KV · 前缀缓存 · 跨机 KV 池',
+    posts: ['sys9-kv-cache-fundamentals-optimization', 'sys10-kv-cache-engineering-sglang-vllm-attentionstore', 'sys6-hisparse-hierarchical-kv-cache', 'sys12-mooncake-kvcache-centric-serving'],
+    color: '#0ea5e9',
+  },
+  {
+    name: 'L0 · 并行与算子',
+    role: '多卡怎么切、单卡怎么算得快',
+    items: 'TP / PP / EP / SP / CP · EPLB · FlashMLA · DeepGEMM · TileLang',
+    posts: ['sys8-parallel-strategies-pd-disaggregation', 'sys2-ring-attention', 'op1-mla-operator', 'op3-eagleqbsa'],
+    color: '#6b7280',
+  },
+];
+
+// 四条阅读主线
+const paths = [
+  {
+    name: '我想搞懂原理',
+    desc: '从「为什么朴素推理不行」出发，顺着系统层一路往下挖，遇到模型结构再回补前沿架构。',
+    order: ['fw1', 'fw2', 'fw3', 'sys9', 'sys10', 'sys8', 'ep1', 'ep4', 'fw10'],
+  },
+  {
+    name: '我要调优线上服务',
+    desc: '直接按指标导向：先看 TTFT 归谁管（缓存 + Prefill），再看 TPOT 归谁管（解码 + 图模式），最后查显存墙。',
+    order: ['sys9', 'sys11', 'fw7', 'sys8', 'ep4', 'fw10'],
+  },
+  {
+    name: '我要选型 / 做技术判断',
+    desc: '横向对比视角：vLLM、SGLang、DeepInfer 各交付了什么边界，哪些得自己补。',
+    order: ['fw4', 'fw6', 'fw10', 'sys12', 'tr1'],
+  },
+  {
+    name: '我关心国产硬件落地',
+    desc: '昆仑芯、昇腾上的实测与调优：哪些优化能搬，哪些平台特性不支持。',
+    order: ['sys1', 'sys11', 'fw8', 'op3', 'fw10'],
+  },
+];
+
+const slug = (s: string) => base + 'blog/' + s;
+---
+
+<!doctype html>
+<html lang="zh" style={`--bg-url:url('${base}24solar-bg.png')`}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
+    <title>端到端推理全景 · 一条请求从进入到吐出第一个字</title>
+    <meta name="description" content="把大模型推理拆成一条请求的七个阶段与六层技术栈，每一层都挂回站内对应文章，作为整个博客的总导航图。" />
+    <style is:global>
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: var(--bg-url);
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+        opacity: 0.13;
+        z-index: -1;
+        pointer-events: none;
+        transition: opacity .25s ease;
+      }
+      :root[data-theme="dark"] body::before { opacity: 0.08; }
+    </style>
+    <style>
+      :root {
+        --bg: #ffffff; --fg: #1a1a1a; --muted: #6b7280; --accent: #2563eb;
+        --border: #e5e7eb; --code-bg: #f6f8fa; --card: #ffffff; --soft: #f8fafc;
+      }
+      :root[data-theme="dark"] {
+        --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --accent: #58a6ff;
+        --border: #30363d; --code-bg: #161b22; --card: #0d1117; --soft: #161b22;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; color: var(--fg); background: var(--bg); line-height: 1.75;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+        transition: background-color .25s ease, color .25s ease;
+      }
+      .site-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 16px 24px; border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; background: rgba(255,255,255,0.9); backdrop-filter: blur(6px); z-index: 50;
+      }
+      :root[data-theme="dark"] .site-header { background: rgba(13,17,23,0.9); }
+      .brand { font-weight: 700; font-size: 18px; color: var(--fg); text-decoration: none; }
+      .site-header nav a { margin-left: 18px; color: var(--muted); text-decoration: none; font-size: 15px; }
+      .site-header nav a:hover { color: var(--accent); }
+      .lang-switch .cur { color: var(--accent); font-weight: 700; }
+      .lang-switch .sep { color: var(--border); margin: 0 6px; }
+      .theme-toggle {
+        margin-left: 10px; width: 34px; height: 34px; border-radius: 50%;
+        border: 1px solid var(--border); background: transparent; color: var(--fg);
+        cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; justify-content: center;
+      }
+      main { max-width: 900px; margin: 0 auto; padding: 36px 24px 80px; }
+      h1 { font-size: 28px; line-height: 1.3; margin: 8px 0 6px; }
+      .lead { color: var(--muted); font-size: 16px; margin: 0 0 8px; }
+      h2 { font-size: 21px; margin-top: 46px; border-left: 4px solid var(--accent); padding-left: 10px; }
+      .sec-note { color: var(--muted); font-size: 14px; margin: 6px 0 20px; }
+
+      /* 阶段时间轴 */
+      .rail { display: flex; gap: 6px; overflow-x: auto; padding: 4px 0 10px; scrollbar-width: thin; }
+      .rail::-webkit-scrollbar { height: 6px; }
+      .rail::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+      .st {
+        flex: 1 0 auto; min-width: 104px; text-align: left; cursor: pointer;
+        border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+        background: var(--card); color: var(--fg); font-family: inherit;
+        transition: border-color .15s, transform .15s, background-color .15s;
+      }
+      .st:hover { border-color: var(--accent); transform: translateY(-2px); }
+      .st.on { border-color: var(--accent); background: var(--soft); box-shadow: 0 0 0 1px var(--accent) inset; }
+      .st .num { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .st.on .num { color: var(--accent); font-weight: 700; }
+      .st .nm { font-size: 14px; font-weight: 600; margin-top: 2px; }
+      .st .sh { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+      /* 详情面板 */
+      .detail {
+        border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px;
+        background: var(--soft); margin-top: 6px; min-height: 260px;
+      }
+      .detail h3 { margin: 0 0 4px; font-size: 18px; }
+      .detail .dq {
+        font-size: 14px; color: var(--accent); background: var(--card);
+        border: 1px dashed var(--border); border-radius: 8px; padding: 8px 12px; margin: 12px 0;
+      }
+      .detail p.body { font-size: 15px; margin: 12px 0; }
+      .detail p.body strong { color: var(--fg); }
+      .cost { font-size: 13px; color: var(--muted); margin: 12px 0 16px; }
+      .cost b { color: #b45309; font-weight: 600; }
+      :root[data-theme="dark"] .cost b { color: #fbbf24; }
+      .plist { list-style: none; padding: 0; margin: 0; }
+      .plist li { padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 14px; }
+      .plist li:last-child { border-bottom: none; }
+      .plist a { color: var(--fg); text-decoration: none; }
+      .plist a:hover { color: var(--accent); }
+      .plist a::before { content: "→ "; color: var(--accent); }
+      .plabel { font-size: 12px; color: var(--muted); letter-spacing: .04em; margin-bottom: 6px; }
+
+      /* 分层栈 */
+      .stack { margin-top: 8px; }
+      .lay {
+        display: flex; align-items: flex-start; gap: 14px;
+        border: 1px solid var(--border); border-left-width: 4px; border-radius: 8px;
+        padding: 12px 14px; margin-bottom: 8px; background: var(--card);
+        transition: background-color .15s;
+      }
+      .lay:hover { background: var(--soft); }
+      .lay .lname { font-size: 14px; font-weight: 600; white-space: nowrap; min-width: 128px; }
+      .lay .lrole { font-size: 12px; color: var(--muted); min-width: 190px; }
+      .lay .litems { font-size: 12px; color: var(--muted); flex: 1; min-width: 160px; }
+      .lay .llinks { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: 300px; }
+      .lay .llinks a {
+        font-size: 11px; padding: 2px 8px; border-radius: 999px;
+        border: 1px solid var(--border); color: var(--muted); text-decoration: none; white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+      .lay .llinks a:hover { border-color: var(--accent); color: var(--accent); }
+      @media (max-width: 760px) {
+        .lay { flex-direction: column; gap: 6px; }
+        .lay .llinks { justify-content: flex-start; max-width: none; }
+        .lay .lrole, .lay .litems { min-width: 0; }
+      }
+
+      /* 主线卡片 */
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+      @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } }
+      .path {
+        border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; background: var(--card);
+      }
+      .path h4 { margin: 0 0 6px; font-size: 15px; }
+      .path p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+      .chain { display: flex; flex-wrap: wrap; gap: 4px; font-size: 11px; font-variant-numeric: tabular-nums; }
+      .chain a {
+        padding: 2px 8px; border-radius: 999px; text-decoration: none;
+        border: 1px solid var(--border); color: var(--fg); background: var(--soft);
+      }
+      .chain a:hover { border-color: var(--accent); color: var(--accent); }
+      .chain span.arr { color: var(--border); align-self: center; }
+
+      .note {
+        border-left: 4px solid var(--accent); background: var(--soft);
+        padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 22px 0; font-size: 14px;
+      }
+      footer { text-align: center; color: var(--muted); font-size: 13px; padding: 32px 16px; border-top: 1px solid var(--border); }
+    </style>
+  </head>
+  <body>
+    <SiteHeader lang="zh" altLang="en" altHref="/en/panorama/" />
+    <main>
+      <h1>端到端推理全景</h1>
+      <p class="lead">一条请求从进入到吐出第一个字，中间要穿过七个阶段、六层技术栈。<br />这张图是整个博客的总目录：点任何一个环节，都能找到对应的文章。</p>
+
+      <div class="note">
+        读法建议：<strong>先看横向的生命周期</strong>，搞清楚一次请求的时间花在哪；<strong>再看纵向的分层</strong>，搞清楚每一层的优化手段归谁管。两张视图看懂了，站里一百多篇的定位就都清楚了。
+      </div>
+
+      <h2>一、一条请求的七个阶段</h2>
+      <p class="sec-note">横向看：从 API 进门到字符流回客户端，每个阶段都有它的瓶颈与对应文章。</p>
+
+      <div class="rail" id="rail">
+        {stages.map((s, i) => (
+          <button class="st" data-id={s.id} type="button" aria-label={s.name}>
+            <div class="num">0{i + 1}</div>
+            <div class="nm">{s.name}</div>
+            <div class="sh">{s.short}</div>
+          </button>
+        ))}
+      </div>
+
+      <div class="detail" id="detail">
+        <h3 id="d-name"></h3>
+        <div class="dq" id="d-q"></div>
+        <p class="body" id="d-desc"></p>
+        <p class="cost" id="d-cost"></p>
+        <div class="plabel">相关文章</div>
+        <ul class="plist" id="d-posts"></ul>
+      </div>
+
+      <h2>二、六层技术栈</h2>
+      <p class="sec-note">纵向看：同一件事在不同抽象层上被反复优化。层与层之间的耦合，才是真正难的地方。</p>
+
+      <div class="stack">
+        {layers.map((l) => (
+          <div class="lay" style={`border-left-color:${l.color}`}>
+            <div>
+              <div class="lname" style={`color:${l.color}`}>{l.name}</div>
+            </div>
+            <div class="lrole">{l.role}</div>
+            <div class="litems">{l.items}</div>
+            <div class="llinks">
+              {l.posts.map((p) => <a href={slug(p)}>{p.split('-')[0]}</a>)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div class="note">
+        一个反复出现的规律：<strong>越往下层，收益越确定但天花板越低；越往上层，收益越大但依赖业务形态。</strong> 换一个 kernel 提升 5% 很稳；换一套调度策略可能提升 3 倍，也可能在低并发下反而变慢。
+      </div>
+
+      <h2>三、按目标选路线</h2>
+      <p class="sec-note">四条现成的主线，不必按顺序从第一篇读起。</p>
+
+      <div class="grid2">
+        {paths.map((p) => (
+          <div class="path">
+            <h4>{p.name}</h4>
+            <p>{p.desc}</p>
+            <div class="chain">
+              {p.order.map((s, i) => (
+                <>
+                  {i > 0 && <span class="arr">›</span>}
+                  <a href={slug(s)}>{s}</a>
+                </>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <h2>四、全景里最容易被忽略的三件事</h2>
+
+      <div class="note">
+        <strong>1. 缓存问题其实是个生命周期问题。</strong>不是「有多少显存就存多少」，而是「这份数据活多久」。DeepInfer 的 SWA 状态只活 180 秒，就不该占持久层——认错这一点，能省掉近一半持久缓存容量。
+      </div>
+
+      <div class="note">
+        <strong>2. 延迟的大头往往不是计算。</strong>低并发长上下文场景下，kernel launch、跨卡同步、CPU 排队这些「非计算开销」能主导 TTFT。所以持久内核 + 依赖启动、异步调度这类做法的收益，常常比继续压榨单 kernel 更直接。
+      </div>
+
+      <div class="note">
+        <strong>3. 模型侧与系统侧必须一起设计。</strong>128 这个数字同时出现在窗口长度、缓存块大小、重放窗口与命中规则里，不是巧合，是一起选出来的。任何「只改系统层」或「只改模型层」的方案，都会在另一侧撞墙。
+      </div>
+
+      <p style="margin-top:36px;"><a href={base} style="color:var(--accent);text-decoration:none;">← 回到全部系列</a></p>
+    </main>
+    <footer>© 2026 大模型技术notes · 端到端推理全景</footer>
+
+    <script define:vars={{ stages }}>
+      var el = document.getElementById('rail');
+      var dName = document.getElementById('d-name');
+      var dQ = document.getElementById('d-q');
+      var dDesc = document.getElementById('d-desc');
+      var dCost = document.getElementById('d-cost');
+      var dPosts = document.getElementById('d-posts');
+
+      function md(s) {
+        return s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      }
+
+      function show(id) {
+        var s = stages.find(function (x) { return x.id === id; });
+        if (!s) return;
+        Array.prototype.forEach.call(el.querySelectorAll('.st'), function (b) {
+          b.classList.toggle('on', b.getAttribute('data-id') === id);
+        });
+        dName.textContent = s.name;
+        dQ.textContent = s.q;
+        dDesc.innerHTML = md(s.desc);
+        dCost.innerHTML = '代价：<b>' + s.cost + '</b>';
+        dPosts.innerHTML = s.posts.map(function (p) {
+          return '<li><a href="' + p.href + '">' + p.title + '</a></li>';
+        }).join('');
+      }
+
+      el.addEventListener('click', function (e) {
+        var b = e.target.closest('.st');
+        if (b) show(b.getAttribute('data-id'));
+      });
+
+      show(stages[0].id);
+
+      // 主题切换
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'theme-toggle';
+        btn.className = 'theme-toggle';
+        btn.type = 'button';
+        btn.setAttribute('aria-label', '切换日间/夜间模式');
+        document.querySelector('.site-header nav').appendChild(btn);
+      }
+      function sync() {
+        var t = document.documentElement.getAttribute('data-theme');
+        btn.textContent = t === 'dark' ? '☀️' : '🌙';
+      }
+      btn.addEventListener('click', function () {
+        var cur = document.documentElement.getAttribute('data-theme');
+        var nx = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', nx);
+        try { localStorage.setItem('theme', nx); } catch (err) {}
+        sync();
+      });
+      sync();
+    </script>
+  </body>
+</html>

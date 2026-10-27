@@ -30,6 +30,7 @@ const fw = [
   { href: base + 'en/blog/fw7-cuda-graph', title: '(7) Graph Mode — CUDA Graphs in vLLM & SGLang', date: '2026-08-04' },
   { href: base + 'en/blog/fw8-v1-v2-kunlun', title: '(8) Two Layers of V1/V2 in vLLM 0.25.1 & Where vLLM-Kunlun Lands', date: '2026-08-05' },
   { href: base + 'en/blog/fw9-wan22-vllm-omni', title: '(9) Wan2.2-I2V/T2V-A14B: Dual-Expert MoE Video Model and vllm-Omni Engine Dissected', date: '2026-08-11' },
+  { href: base + 'en/blog/fw10-deepinfer', title: '(10) DeepInfer Dissected: What DeepSeek Handed Over, and What It Kept', date: '2026-10-27' },
 ];
 const vla = [
   { href: base + 'en/blog/vla1-basics', title: '(1) From "See" to "Act" — What Is a Vision-Language-Action Model', date: '2026-08-04' },
@@ -99,6 +100,54 @@ const hot = Object.entries(hotMods)
     };
   })
   .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+// Five categories regrouping the twelve series by "what problem are you solving"
+const cats = [
+  {
+    name: 'Models & Decoding Algorithms',
+    hint: 'What a model looks like, how one decode step emits several tokens, how operators become runnable code',
+    series: [
+      { title: 'Frontier Architecture Notes', count: fa.length, anchor: '#s-fa' },
+      { title: 'Speculative Decoding Notes', count: spec.length, anchor: '#s-spec' },
+      { title: 'Operator Notes', count: op.length, anchor: '#s-op' },
+    ],
+  },
+  {
+    name: 'Serving Systems & Engineering',
+    hint: 'What the systems layer still owes you after the model computes: where KV lives, how to slice parallelism, how the engine schedules',
+    series: [
+      { title: 'Inference Systems Infrastructure Notes', count: sysn.length, anchor: '#s-sys' },
+      { title: 'vLLM & SGLang Serving Notes', count: fw.length, anchor: '#s-fw' },
+    ],
+  },
+  {
+    name: 'Multimodal & Embodied',
+    hint: 'From seeing to acting: multimodal models, robot policies, world models, and the papers behind them',
+    series: [
+      { title: 'VLA Decoding Notes', count: vla.length, anchor: '#s-vla' },
+      { title: 'Multimodal Decoding Notes', count: mm.length, anchor: '#s-mm' },
+      { title: 'Paper Primer Notes', count: pp.length, anchor: '#s-pp' },
+    ],
+  },
+  {
+    name: 'Training & Agents',
+    hint: 'The two sides outside inference: the RL training stack, and the workload shape Agents impose',
+    series: [
+      { title: 'RL Training Notes', count: rln.length, anchor: '#s-rl' },
+      { title: 'Agent Notes', count: agn.length, anchor: '#s-ag' },
+    ],
+  },
+  {
+    name: 'Timeliness Tracking',
+    hint: 'Who shipped what on which day, and who is falling behind',
+    series: [
+      { title: 'Daily AI Hotspot Notes', count: hot.length, anchor: '#s-aihot' },
+      { title: 'Community Tracker Notes', count: tr.length, anchor: '#s-tr' },
+    ],
+  },
+];
+const totalAll = cats.reduce((n, c) => n + c.series.reduce((m, s) => m + s.count, 0), 0);
+const totalBi = totalAll - hot.length;
 ---
 
 <!doctype html>
@@ -124,6 +173,46 @@ const hot = Object.entries(hotMods)
     .series-more { margin: 4px 0 0; font-size: 14px; }
     .series-more a { color: var(--accent); text-decoration: none; }
     .series-more a:hover { text-decoration: underline; }
+
+    /* Category overview */
+    .overview { margin: 26px 0 8px; padding: 0; display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .overview { grid-template-columns: 1fr 1fr; } }
+    .cat {
+      border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 12px;
+      background: var(--code-bg); transition: border-color .18s ease, transform .18s ease;
+    }
+    .cat:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .cat h3 { margin: 0 0 4px; font-size: 16px; border: none; padding: 0; display: flex; align-items: baseline; gap: 8px; }
+    .cat h3 .num { font-size: 12px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+    .cat p.hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .cat ul { margin: 0; padding: 0; list-style: none; }
+    .cat li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 5px 0; border-top: 1px dashed var(--border); font-size: 14px; }
+    .cat li:first-child { border-top: none; }
+    .cat li a { color: var(--fg); text-decoration: none; }
+    .cat li a:hover { color: var(--accent); }
+    .cat li .cnt { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ov-total { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+    /* Panorama entry */
+    .pan-cta {
+      display: block; margin: 18px 0 6px; padding: 16px 18px; border-radius: 12px;
+      border: 1px solid var(--accent); background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(37,99,235,.02));
+      text-decoration: none; color: var(--fg); transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .pan-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(37,99,235,.14); }
+    .pan-cta strong { font-size: 16px; color: var(--accent); }
+    .pan-cta span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.65; }
+    :root[data-theme="dark"] .cat { background: #161b22; }
+    :root[data-theme="dark"] .pan-cta { background: linear-gradient(135deg, rgba(88,166,255,.12), rgba(88,166,255,.03)); }
+
+    /* Category divider */
+    .cat-head {
+      margin-top: 52px; font-size: 15px; letter-spacing: .06em; color: var(--muted);
+      border-left: none; border-top: 2px solid var(--border); padding: 14px 0 0; font-weight: 700;
+    }
+    .cat-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+    h2[id^="s-"] { margin-top: 30px; }
+    :root { scroll-padding-top: 76px; }
   </style>
   </head>
   <body>
@@ -131,69 +220,33 @@ const hot = Object.entries(hotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge lang="en" />
-      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; twelve key series (Speculative Decoding Notes, Multimodal Decoding Notes, VLA Decoding Notes, vLLM &amp; SGLang Serving Notes, Frontier Architecture Decoding Notes, Inference Systems Infrastructure Notes, RL Training Notes, Agent Notes, Operator Notes, Paper Primer Notes, Community Tracker Notes, Daily AI Hotspot Notes) keep growing, with most posts bilingual.</p>
+      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; twelve series organized into five categories, {totalAll} posts so far, most bilingual.</p>
 
-      <h2>Speculative Decoding Notes</h2>
-      <p class="series-tag">Series · 8 episodes, in order: fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 (why the feature constraint is a scaling lock) → MTP & confidence heads (three self-draft routes chained) → DFlash 2 upgrade and the meta-question of why frameworks don't just combine them. Each post has a Chinese counterpart.</p>
-      <ul class="post-list">
-        {spec.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
+      <a class="pan-cta" href={base + 'en/panorama/'}>
+        <strong>The End-to-End Inference Panorama →</strong>
+        <span>Seven stages from request-in to token-out, crossed with six technical layers, mapped onto the posts on this site. Start with the whole picture, then drill down.</span>
+      </a>
+
+      <h2>Overview by Category</h2>
+      <div class="overview">
+        {cats.map((c) => (
+          <div class="cat">
+            <h3>{c.name}<span class="num">{c.series.reduce((n, s) => n + s.count, 0)} posts</span></h3>
+            <p class="hint">{c.hint}</p>
+            <ul>
+              {c.series.map((s) => (
+                <li><a href={s.anchor}>{s.title}</a><span class="cnt">{s.count}</span></li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
+      <p class="ov-total">{totalAll} posts total, of which {totalBi} are original long-form pieces with a Chinese counterpart; the daily AI hotspots accumulate by date and are archived separately.</p>
 
-      <h2>Multimodal Decoding Notes</h2>
-      <p class="series-tag">Series · 5 episodes, in order: foundations & alignment → VLM evolution → generative models (diffusion / GAN) → VLA & world models → efficient systems & frontier inference. A progressive arc through the common multimodal models, structures, principles, and optimization techniques, each with a Chinese counterpart.</p>
-      <ul class="post-list">
-        {mm.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
-        ))}
-      </ul>
+      <h2 class="cat-head" id="c-model">I · Models &amp; Decoding Algorithms</h2>
+      <p class="cat-note">What a model looks like (architecture), how one decode step emits several tokens (speculative decoding), how operators become runnable code. This group answers the model-side question: compute correctly, compute fast.</p>
 
-      <h2>vLLM &amp; SGLang Serving Notes</h2>
-      <p class="series-tag">Series · 7 episodes, in order: why an inference engine → vLLM internals → SGLang internals → the shared frontier (sync stalls / spec decode / PD disagg / low-bit quant) → the July 2026 release waves → supported models & selection guide → graph mode (CUDA Graphs). The daily vLLM/SGLang tracking distilled into one arc, with hand-drawn SVG architecture diagrams, each with a Chinese counterpart.</p>
-      <ul class="post-list">
-        {fw.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
-        ))}
-      </ul>
-
-      <h2>Inference Systems Infrastructure Notes</h2>
-      <p class="series-tag">Series · 12 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall) → DCP decode context parallelism (sharding KV along the sequence dimension, reusing a Scratch Buffer for comms) → parallelism strategies and PD disaggregation (how to slice and combine TP/PP/EP/SP/CP, and how to compute the prefill:decode instance ratio) → the KV Cache landscape (why it can be cached, how big it gets, the three-layer taxonomy and five quantifiable knobs) → KV Cache in production (SGLang two-level pools and HiCache, vLLM paged block management and the cross-layer unified layout, and AttentionStore measured on Kunlunxin P800) → tuning SGLang HiCache L2 on Kunlunxin P800/P900 (tiered architecture and net-benefit formula → layout choice page_first_direct to layer_first and DMA segment count → async transfer, NUMA affinity, transparent huge pages, PCIe IDO ordering → write-policy semantic fix and Ghost List, TP group shared Host KV → end-to-end TTFT from 28.83s to 18.45s) → Mooncake as a KVCache-centric PD-disaggregated architecture (the Conductor only schedules while the split lives in the instance-role layer; four diagrams contrast the vLLM Disagg Proxy + KV Connector design and the non-PD monolith, plus how Mooncake plugs into vLLM as an external KV layer). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
-      <ul class="post-list">
-        {sysn.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>Agent Notes</h2>
-      <p class="series-tag">Series · 1 episode (opening, ongoing). Threading the scattered Agent notes into one system: capability stack (model / planning / tools / memory) → tool calling and MCP → context engineering (1M-token directory attention) → execution paradigms and orchestration (Orchestrator + executors) → how Agentic workloads turn KV Cache from a memory problem into a scheduling problem. The core claim: Agents define a variable-length, branching, multi-turn workload shape that breaks the engine static scheduling assumptions, closing the loop with HiCache / HiSparse / DCP / KV quantization in Inference Systems Infrastructure Notes. Each post has a Chinese counterpart.</p>
-      <ul class="post-list">
-        {agn.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>VLA Decoding Notes</h2>
-      <p class="series-tag">Series · 9 episodes, in order: from "see" to "act" (what VLA is) → the action engine (Diffusion Policy / Flow Matching / Action Chunking / low latency) → the π family (π0→π0.7) → domestic players (Ant Lingbo / Xiaomi / Tencent) → world models & deployment (data flywheel / scaling bottleneck / investment view) → RT-1's discrete-action route (TokenLearner / causal mask / cross-entropy) → V-JEPA 2 self-supervised video world models → Dreamer V3 world-model RL → Octo (a 27M generalist robot policy that turns fine-tuning to new embodiments into an engineering problem). A natural extension of the LLaVA piece in Multimodal Decoding Notes (2) into the robot's "act" capability, each with a Chinese counterpart.</p>
-      <ul class="post-list">
-        {vla.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
-        ))}
-      </ul>
-
-      <h2>Frontier Architecture Decoding Notes</h2>
+      <h2 id="s-fa">Frontier Architecture Decoding Notes</h2>
       <p class="series-tag">Series · 10 episodes, in order: the 2026 frontier overview (the impossible triangle of long-context × efficiency × scale) → Kimi K3 (redesign attention: KDA + Gated MLA 3:1 + Stable LatentMoE + native vision) → MiniMax M2.7→M3 (sparse attention MSA cuts 1M-context compute to 1/20) → DeepSeek V4 (compress attention CSA+HCA + Muon optimizer + OPD distillation, KV down to ~10%) → Mamba hybrid state + PD disaggregation (how the KV plus SSM recurrent state of Jamba-style hybrids crosses nodes, and why the Mamba state has no token-id key and silently mis-hits) → Gated DeltaNet (Conv1D captures locality, the gated delta rule compresses globality) → Qwen3.8 dual checkpoints (dense 27B vs sparse Flash-Next, 360GB of weights for 6B activations) → the Qwen3.8 family in one frame (2.4T-A95B flagship / Flash serving build / Flash-Next architecture preview, 125B MoE + 51B N-gram at 6B active per token) → a decade of residual connections (equal-weight addition dilutes shallow features and blows up deep hidden states; Hyper-Connections widens the residual stream, mHC buys stability with a doubly stochastic constraint, Attention Residuals treats depth as sequence) → MiniMax M3.1-Flash sparsified end to end (M3 keeps Full Attention in Layer 0-2, Flash swaps it for MSA, so all 60 layers become index-and-select plus block-sparse GQA under long context with no quadratic leftover; the MoE layer count is unchanged while routing is tuned to 129 experts / top-5; plus QAT and a DSpark draft head shipped with the weights). The attention-reshape controlled experiments strung into one arc: dense → sparse → compressed attention → linear attention and hybrid state → sparse MoE at scale → residual-connection restructuring, each with a Chinese counterpart.</p>
       <ul class="post-list">
         {fa.map((p) => (
@@ -204,7 +257,18 @@ const hot = Object.entries(hotMods)
         ))}
       </ul>
 
-      <h2>Operator Notes</h2>
+      <h2 id="s-spec">Speculative Decoding Notes</h2>
+      <p class="series-tag">Series · 8 episodes, in order: fundamentals → the autoregressive drafter's ceiling → DFlash / DSpark deep dives → a head-to-head → EAGLE-3 (why the feature constraint is a scaling lock) → MTP &amp; confidence heads (three self-draft routes chained) → DFlash 2 upgrade and the meta-question of why frameworks don't just combine them. Each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {spec.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2 id="s-op">Operator Notes</h2>
       <p class="series-tag">Series · 3 episodes (ongoing). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; episode two is model quantization for deployment (FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache quantization); episode three is Ascend EagleQBSA quantized × sparse joint attention (the distribution-aware recipe of per-block INT8 QK plus per-channel FP8 V/P, Cube-to-Vector transfer with transpose and columnized Softmax reduction, up to 7.6× on attention modules); later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {op.map((p) => (
@@ -215,7 +279,54 @@ const hot = Object.entries(hotMods)
         ))}
       </ul>
 
-      <h2>Paper Primer Notes</h2>
+      <h2 class="cat-head" id="c-sys">II · Serving Systems &amp; Engineering</h2>
+      <p class="cat-note">What the systems layer still owes you after the model computes: where the KV cache lives, how to slice parallelism, how the engine schedules. These two series are two sides of the same coin with the group above — that one reshapes the model, this one reshapes the runtime.</p>
+
+      <h2 id="s-sys">Inference Systems Infrastructure Notes</h2>
+      <p class="series-tag">Series · 12 episodes, in order: the NUMA x PCIe x NIC data path under P900 + HiCache → Sequence Parallelism + Ring Attention for 1M+ token training → MSA / CSA / HCA as three attention-redesign routes → knowledge distillation and dark knowledge → the KV cache compression landscape from MHA to HiCache → HiSparse hierarchical KV cache (treating HBM as a cache to break the capacity wall) → DCP decode context parallelism (sharding KV along the sequence dimension, reusing a Scratch Buffer for comms) → parallelism strategies and PD disaggregation (how to slice and combine TP/PP/EP/SP/CP, and how to compute the prefill:decode instance ratio) → the KV Cache landscape (why it can be cached, how big it gets, the three-layer taxonomy and five quantifiable knobs) → KV Cache in production (SGLang two-level pools and HiCache, vLLM paged block management and the cross-layer unified layout, and AttentionStore measured on Kunlunxin P800) → tuning SGLang HiCache L2 on Kunlunxin P800/P900 (tiered architecture and net-benefit formula → layout choice page_first_direct to layer_first and DMA segment count → async transfer, NUMA affinity, transparent huge pages, PCIe IDO ordering → write-policy semantic fix and Ghost List, TP group shared Host KV → end-to-end TTFT from 28.83s to 18.45s) → Mooncake as a KVCache-centric PD-disaggregated architecture (the Conductor only schedules while the split lives in the instance-role layer; four diagrams contrast the vLLM Disagg Proxy + KV Connector design and the non-PD monolith, plus how Mooncake plugs into vLLM as an external KV layer). It answers "once the model has computed, what does the systems layer still owe you," and pairs with the model-side redesign in Frontier Architecture Decoding Notes.</p>
+      <ul class="post-list">
+        {sysn.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-fw">vLLM &amp; SGLang Serving Notes</h2>
+      <p class="series-tag">Series · 10 episodes, in order: why an inference engine → vLLM internals → SGLang internals → the shared frontier (sync stalls / spec decode / PD disagg / low-bit quant) → the July 2026 release waves → supported models &amp; selection guide → graph mode (CUDA Graphs) → where vLLM-Kunlun lands → Wan2.2 dual-expert MoE and the vllm-omni engine → DeepInfer dissected (four-layer stack, Wide-EP and EPLB, DSpark variable-length verification, SWA Bounded Replay, zero-overhead scheduling, and the three pieces DeepSeek did not open source). The daily vLLM/SGLang tracking distilled into one arc, with hand-drawn SVG architecture diagrams, each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {fw.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2 class="cat-head" id="c-multi">III · Multimodal &amp; Embodied</h2>
+      <p class="cat-note">From seeing to acting: the multimodal model lineage, robot policies and world models, and the classic papers you cannot skip.</p>
+
+      <h2 id="s-vla">VLA Decoding Notes</h2>
+      <p class="series-tag">Series · 9 episodes, in order: from "see" to "act" (what VLA is) → the action engine (Diffusion Policy / Flow Matching / Action Chunking / low latency) → the π family (π0→π0.7) → domestic players (Ant Lingbo / Xiaomi / Tencent) → world models &amp; deployment (data flywheel / scaling bottleneck / investment view) → RT-1's discrete-action route (TokenLearner / causal mask / cross-entropy) → V-JEPA 2 self-supervised video world models → Dreamer V3 world-model RL → Octo (a 27M generalist robot policy that turns fine-tuning to new embodiments into an engineering problem). A natural extension of the LLaVA piece in Multimodal Decoding Notes (2) into the robot's "act" capability, each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {vla.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2 id="s-mm">Multimodal Decoding Notes</h2>
+      <p class="series-tag">Series · 5 episodes, in order: foundations &amp; alignment → VLM evolution → generative models (diffusion / GAN) → VLA &amp; world models → efficient systems &amp; frontier inference. A progressive arc through the common multimodal models, structures, principles, and optimization techniques, each with a Chinese counterpart.</p>
+      <ul class="post-list">
+        {mm.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2 id="s-pp">Paper Primer Notes</h2>
       <p class="series-tag">Series · 2 episodes (opening). Readable notes on the "classic papers" no one in the LLM era can avoid: from Transformer (2017), which defined attention, to Diffusion Policy (2023), which ports the diffusion-denoising paradigm into robot action generation. Complements the "action engine" in VLA Notes and the engineering series; each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {pp.map((p) => (
@@ -226,18 +337,10 @@ const hot = Object.entries(hotMods)
         ))}
       </ul>
 
-      <h2>Community Tracker Notes</h2>
-      <p class="series-tag">Series · 3 episodes. Daily vLLM / SGLang upstream commits, model cookbooks, and domestic-model enablement progress, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
-      <ul class="post-list">
-        {tr.map((p) => (
-          <li>
-            <a href={p.href}>{p.title}</a>
-            <div class="date">{p.date}</div>
-          </li>
-        ))}
-      </ul>
+      <h2 class="cat-head" id="c-train">IV · Training &amp; Agents</h2>
+      <p class="cat-note">The two sides outside inference: the side that trains the model (the RL infrastructure) and the side that puts it to work (the workload shape Agents impose).</p>
 
-      <h2>RL Training Notes</h2>
+      <h2 id="s-rl">RL Training Notes</h2>
       <p class="series-tag">Series · 1 episode (opening, ongoing). Filling a gap the site previously had: the training-side infrastructure shared by LLMs and robots. The opening post covers distributed RL training — why RLHF cannot run as a single-process pot of everything (rollout eats roughly 80% of a PPO step), how the Actor / Critic / Reference / Reward roles decouple onto separate GPU pools, how vLLM or SGLang serves as the rollout engine, the PPO and GRPO objectives and the price of deleting the Critic, the two weight-sync paths (Ray Object Store vs NCCL broadcast), and how the same stack serves both text RLHF and robot VLA RLAIF. Complements the inference-side optimization in Inference Systems Infrastructure Notes, each post with a Chinese counterpart.</p>
       <ul class="post-list">
         {rln.map((p) => (
@@ -245,7 +348,18 @@ const hot = Object.entries(hotMods)
         ))}
       </ul>
 
-      <h2>Daily AI Hotspot Notes</h2>
+      <h2 id="s-ag">Agent Notes</h2>
+      <p class="series-tag">Series · 1 episode (opening, ongoing). Threading the scattered Agent notes into one system: capability stack (model / planning / tools / memory) → tool calling and MCP → context engineering (1M-token directory attention) → execution paradigms and orchestration (Orchestrator + executors) → how Agentic workloads turn KV Cache from a memory problem into a scheduling problem. The core claim: Agents define a variable-length, branching, multi-turn workload shape that breaks the engine static scheduling assumptions, closing the loop with HiCache / HiSparse / DCP / KV quantization in Inference Systems Infrastructure Notes. Each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {agn.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 class="cat-head" id="c-daily">V · Timeliness Tracking</h2>
+      <p class="cat-note">Who shipped what on which day, and who is falling behind. This fills the half that principle-heavy posts cannot cover — versions, commits, enablement progress.</p>
+
+      <h2 id="s-aihot">Daily AI Hotspot Notes</h2>
       <p class="series-tag">Series · {hot.length} episodes (ongoing). Front-line daily progress on vLLM / SGLang upstream, domestic-model enablement, speculative decoding and inference optimization, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {hot.slice(0, 1).map((p) => (
@@ -256,6 +370,17 @@ const hot = Object.entries(hotMods)
         ))}
       </ul>
       <p class="series-more"><a href={base + 'en/blog/aihot/'}>View all {hot.length} episodes →</a></p>
+
+      <h2 id="s-tr">Community Tracker Notes</h2>
+      <p class="series-tag">Series · 3 episodes. Daily vLLM / SGLang upstream commits, model cookbooks, and domestic-model enablement progress, framed as "same-day same-frame / who is falling behind" — filling the timeliness gap left by the principle-heavy framework notes; each post has a Chinese counterpart.</p>
+      <ul class="post-list">
+        {tr.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
 
       <section class="engage">
         <p class="engage-tip">Found these notes useful? Buy the author a coffee ☕️</p>

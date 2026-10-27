@@ -30,6 +30,7 @@ const fw = [
   { href: base + 'blog/fw7-cuda-graph', title: '（七）图模式：CUDA Graph 原理与 vLLM / SGLang 的实现', date: '2026-08-04' },
   { href: base + 'blog/fw8-v1-v2-kunlun', title: '（八）vLLM 0.25.1 的两层 V1/V2 与 vLLM-Kunlun 的落点', date: '2026-08-05' },
   { href: base + 'blog/fw9-wan22-vllm-omni', title: '（九）Wan2.2-I2V/T2V-A14B：双专家 MoE 视频模型与 vllm-omni 引擎剖析', date: '2026-08-11' },
+  { href: base + 'blog/fw10-deepinfer', title: '（十）DeepInfer 深度解析：DeepSeek 把生产级推理栈交出来之后，到底给了什么、留了什么', date: '2026-10-27' },
 ];
 const vla = [
   { href: base + 'blog/vla1-basics', title: '（一）从「看懂」到「动手」：什么是视觉-语言-动作模型', date: '2026-08-04' },
@@ -99,6 +100,54 @@ const aihot = Object.entries(aihotMods)
     };
   })
   .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+// 五大分类：把 12 个系列按「你在解决哪一类问题」重新聚合，顶部概览用
+const cats = [
+  {
+    name: '模型与解码算法',
+    hint: '模型长什么样、一次解码怎么多吐几个 token、算子怎么写成能跑的代码',
+    series: [
+      { title: '前沿架构解码手记', count: fa.length, anchor: '#s-fa' },
+      { title: '推测解码手记', count: spec.length, anchor: '#s-spec' },
+      { title: '算子讲解手记', count: op.length, anchor: '#s-op' },
+    ],
+  },
+  {
+    name: '推理系统与工程',
+    hint: '模型算完之后，系统层还要解决什么：KV 怎么放、并行怎么切、引擎怎么调',
+    series: [
+      { title: '推理系统基础设施手记', count: sys.length, anchor: '#s-sys' },
+      { title: 'vLLM 与 SGLang 框架解码手记', count: fw.length, anchor: '#s-fw' },
+    ],
+  },
+  {
+    name: '多模态与具身',
+    hint: '从「会看」到「会动」：多模态模型、机器人策略、论文级原理',
+    series: [
+      { title: 'VLA 解码手记', count: vla.length, anchor: '#s-vla' },
+      { title: '多模态解码手记', count: mm.length, anchor: '#s-mm' },
+      { title: '论文科普手记', count: pp.length, anchor: '#s-pp' },
+    ],
+  },
+  {
+    name: '训练与智能体',
+    hint: '推理之外的两块：RL 训练侧基础设施，以及 Agent 定义的负载形态',
+    series: [
+      { title: '强化学习训练手记', count: rl.length, anchor: '#s-rl' },
+      { title: '智能体手记', count: ag.length, anchor: '#s-ag' },
+    ],
+  },
+  {
+    name: '时效跟踪',
+    hint: '谁在哪天落了什么、谁在掉队——补原理型文章缺的那一半',
+    series: [
+      { title: '每日AI热点', count: aihot.length, anchor: '#s-aihot' },
+      { title: '社区跟踪手记', count: tr.length, anchor: '#s-tr' },
+    ],
+  },
+];
+const totalAll = cats.reduce((n, c) => n + c.series.reduce((m, s) => m + s.count, 0), 0);
+const totalBi = totalAll - aihot.length;
 ---
 
 <!doctype html>
@@ -143,6 +192,47 @@ const aihot = Object.entries(aihotMods)
     .series-more { margin: 4px 0 0; font-size: 14px; }
     .series-more a { color: var(--accent); text-decoration: none; }
     .series-more a:hover { text-decoration: underline; }
+
+    /* 分类概览 */
+    .overview { margin: 26px 0 8px; padding: 0; display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 700px) { .overview { grid-template-columns: 1fr 1fr; } }
+    .cat {
+      border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px 12px;
+      background: var(--code-bg); transition: border-color .18s ease, transform .18s ease;
+    }
+    .cat:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .cat h3 { margin: 0 0 4px; font-size: 16px; border: none; padding: 0; display: flex; align-items: baseline; gap: 8px; }
+    .cat h3 .num { font-size: 12px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+    .cat p.hint { margin: 0 0 10px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .cat ul { margin: 0; padding: 0; list-style: none; }
+    .cat li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 5px 0; border-top: 1px dashed var(--border); font-size: 14px; }
+    .cat li:first-child { border-top: none; }
+    .cat li a { color: var(--fg); text-decoration: none; }
+    .cat li a:hover { color: var(--accent); }
+    .cat li .cnt { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ov-total { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+
+    /* 全景页入口 */
+    .pan-cta {
+      display: block; margin: 18px 0 6px; padding: 16px 18px; border-radius: 12px;
+      border: 1px solid var(--accent); background: linear-gradient(135deg, rgba(37,99,235,.08), rgba(37,99,235,.02));
+      text-decoration: none; color: var(--fg); transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .pan-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(37,99,235,.14); }
+    .pan-cta strong { font-size: 16px; color: var(--accent); }
+    .pan-cta span { display: block; margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.65; }
+    :root[data-theme="dark"] .cat { background: #161b22; }
+    :root[data-theme="dark"] .pan-cta { background: linear-gradient(135deg, rgba(88,166,255,.12), rgba(88,166,255,.03)); }
+
+    /* 分类分隔标题 */
+    .cat-head {
+      margin-top: 52px; font-size: 15px; letter-spacing: .06em; color: var(--muted);
+      border-left: none; border-top: 2px solid var(--border); padding: 14px 0 0;
+      text-transform: none; font-weight: 700;
+    }
+    .cat-note { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+    h2[id^="s-"] { margin-top: 30px; }
+    :root { scroll-padding-top: 76px; }
   </style>
   </head>
   <body>
@@ -150,57 +240,33 @@ const aihot = Object.entries(aihotMods)
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge />
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十二大系列（推测解码手记、多模态解码手记、VLA 解码手记、vLLM 与 SGLang 框架解码手记、前沿架构解码手记、推理系统基础设施手记、强化学习训练手记、智能体手记、算子讲解手记、论文科普手记、社区跟踪手记、每日AI热点）持续更新，多数篇目提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十二个系列按五大分类组织，共 {totalAll} 篇，多数篇目提供中英对照。</p>
 
-      <h2>推测解码手记</h2>
-      <p class="series-tag">系列 · 共 8 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3（feature 约束的 scaling 枷锁）→ MTP 与置信度头（三条自草稿路线串链）→ DFlash 2 升级与"为何框架不直接组合"的元问题。每篇附英文对照。</p>
-      <ul class="post-list">
-        {spec.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+      <a class="pan-cta" href={base + 'panorama/'}>
+        <strong>端到端推理全景 →</strong>
+        <span>从请求进来到 token 流回去的七个阶段 × 六个技术层，一张图找齐站内对应文章。适合先看全局、再挑细节。</span>
+      </a>
+
+      <h2>按分类概览</h2>
+      <div class="overview">
+        {cats.map((c, i) => (
+          <div class="cat">
+            <h3>{c.name}<span class="num">{c.series.reduce((n, s) => n + s.count, 0)} 篇</span></h3>
+            <p class="hint">{c.hint}</p>
+            <ul>
+              {c.series.map((s) => (
+                <li><a href={s.anchor}>{s.title}</a><span class="cnt">{s.count} 篇</span></li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
+      <p class="ov-total">合计 {totalAll} 篇，其中 {totalBi} 篇为原创长文并附中英对照；每日AI热点按天积累，单独归档。</p>
 
-      <h2>多模态解码手记</h2>
-      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
-      <ul class="post-list">
-        {mm.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
+      <h2 class="cat-head" id="c-model">一 · 模型与解码算法</h2>
+      <p class="cat-note">模型长什么样（架构）、一次解码怎么多吐几个 token（推测解码）、算子怎么写才跑得动（算子）。这一组回答「算得准、算得快」的模型侧问题。</p>
 
-      <h2>vLLM 与 SGLang 框架解码手记</h2>
-      <p class="series-tag">系列 · 共 9 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南 → 图模式（CUDA Graph）→ vLLM-Kunlun 落点 → Wan2.2 双专家 MoE 与 vllm-omni 引擎剖析。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
-      <ul class="post-list">
-        {fw.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>推理系统基础设施手记</h2>
-      <p class="series-tag">系列 · 共 12 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）→ 并行切分策略全景与 PD 分离（TP/PP/EP/SP/CP 五把刀怎么切、怎么组合，以及 prefill:decode 实例配比的算法）→ KV Cache 全景（为什么能缓存、到底多大、三层优化分类与五个可量化旋钮）→ KV Cache 工程实现（SGLang 两级内存池与 HiCache、vLLM 分页 Block 管理与跨层统一布局、AttentionStore 在昆仑芯 P800 上的实测）→ SGLang HiCache L2 在昆仑芯 P800/P900 上的适配与调优实战（分层架构与净收益公式 → 布局选择 page_first_direct → layer_first 与 DMA 段数 → 异步搬运、NUMA 亲和、透明大页、PCIe IDO 保序 → 写入策略语义修复与 Ghost List、TP 组共享 Host KV → 端到端 TTFT 从 28.83s 降到 18.45s）→ Mooncake 以 KVCache 为中心的 PD 分离架构（Conductor 只调度、实例角色层才分离，四张图对比 vLLM 的 Disagg Proxy + KV Connector 方案与非 PD 单体，以及 Mooncake 如何挂进 vLLM 当外置 KV 层）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
-      <ul class="post-list">
-        {sys.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>智能体手记</h2>
-      <p class="series-tag">系列 · 共 1 篇（开篇，持续更新）。把散落在每日追踪里的 Agent 知识串成体系：能力栈（模型 / 规划 / 工具 / 记忆）→ 工具调用与 MCP → 上下文工程（1M-token 目录注意力）→ 执行范式与编排（Orchestrator + 执行者）→ Agentic 负载如何把 KV Cache 从显存问题变成调度问题。核心结论是 Agent 定义了「变长 / 分叉 / 多轮」的负载形态，击穿了推理引擎的静态调度假设，从而与「推理系统基础设施手记」的 HiCache / HiSparse / DCP / KV 量化串成一条完整闭环，每篇附英文对照。</p>
-      <ul class="post-list">
-        {ag.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>VLA 解码手记</h2>
-      <p class="series-tag">系列 · 共 9 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）→ V-JEPA 2 视频自监督世界模型 → Dreamer V3 世界模型 RL → Octo（27M 通用机器人策略，把"可微调到新本体"做成工程问题）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
-      <ul class="post-list">
-        {vla.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
-
-      <h2>前沿架构解码手记</h2>
+      <h2 id="s-fa">前沿架构解码手记</h2>
       <p class="series-tag">系列 · 共 10 篇（持续更新），循序渐进：从 2026 前沿大模型总览（长上下文 × 效率 × 规模化的不可能三角）→ Kimi K3（重设计注意力 KDA + Gated MLA 3:1 + Stable LatentMoE + 原生视觉）→ MiniMax M2.7→M3（稀疏注意力 MSA 把 1M 上下文算力压到 1/20）→ DeepSeek V4（压缩注意力 CSA+HCA + Muon 优化器 + OPD 蒸馏，KV 压到 ~10%）→ Mamba 混合状态 + PD 分离（Jamba 式混合架构要跨节点搬的 KV + SSM 递归状态怎么处理、为什么 Mamba 状态缺 token-id 寻址键会「静默命中错位」）→ Gated DeltaNet（Conv1D 先抓局部、Gated Delta Rule 再压全局的线性注意力层）→ Qwen3.8 双 checkpoint 对比（稠密 27B vs 稀疏 Flash-Next，360GB 权重只为换 6B 激活）→ Qwen3.8 三版本同框（2.4T-A95B 旗舰 / Flash 服务版 / Flash-Next 架构预览，125B MoE + 51B N-gram 每激活 6B）→ 残差连接十年演进（等权相加稀释浅层信息、撑爆深层隐状态；Hyper-Connections 拓宽残差流、mHC 用双随机矩阵约束换稳定、Attention Residuals 把深度当序列）→ MiniMax M3.1-Flash 全层稀疏化（M3 在 Layer 0–2 保留 Full Attention，Flash 换成 MSA，60 层长上下文全部变成「索引选块 + 块稀疏 GQA」，不再有平方复杂度遗留层；MoE 层数不变、路由调优为 129 experts / top-5；另有 QAT 与随权重发布的 DSpark）。把"改注意力 / 改权重组织"的对照实验串成一条主线：稠密注意力 → 稀疏注意力 → 压缩注意力 → 线性注意力与混合状态 → 稀疏 MoE 大容量 → 残差连接重构，每篇附英文对照。</p>
       <ul class="post-list">
         {fa.map((p) => (
@@ -208,7 +274,15 @@ const aihot = Object.entries(aihotMods)
         ))}
       </ul>
 
-      <h2>算子讲解手记</h2>
+      <h2 id="s-spec">推测解码手记</h2>
+      <p class="series-tag">系列 · 共 8 篇，循序渐进：从基础原理 → 自回归草稿的天花板 → DFlash / DSpark 深度解析 → 二者同台对比 → EAGLE-3（feature 约束的 scaling 枷锁）→ MTP 与置信度头（三条自草稿路线串链）→ DFlash 2 升级与"为何框架不直接组合"的元问题。每篇附英文对照。</p>
+      <ul class="post-list">
+        {spec.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-op">算子讲解手记</h2>
       <p class="series-tag">系列 · 共 3 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，第二篇模型量化部署（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化），第三篇昇腾 EagleQBSA 量化×稀疏联合注意力（QK 按块 INT8 + V/P 按通道 FP8 的分布感知配方、Cube→Vector 直搬转置与 Softmax 归约列化，整网注意力最高 7.6×），后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
       <ul class="post-list">
         {op.map((p) => (
@@ -216,7 +290,45 @@ const aihot = Object.entries(aihotMods)
         ))}
       </ul>
 
-      <h2>论文科普手记</h2>
+      <h2 class="cat-head" id="c-sys">二 · 推理系统与工程</h2>
+      <p class="cat-note">模型算完之后，系统层还要解决什么：KV 放在哪、并行怎么切、引擎怎么调度。这一组与上一组互为表里——那边改模型，这边改运行时。</p>
+
+      <h2 id="s-sys">推理系统基础设施手记</h2>
+      <p class="series-tag">系列 · 共 12 篇（英文对照持续补齐中），循序渐进：从 P900 + HiCache 的 NUMA × PCIe × NIC 数据链路 → Sequence Parallelism + Ring Attention 把 1M+ Token 训成常态 → MSA / CSA / HCA 三种注意力改造路线 → 知识蒸馏的暗知识传递 → 从 MHA 到 HiCache 的 KV Cache 压缩演进全景 → HiSparse 分层 KV 缓存（把 HBM 当缓存、拆掉长上下文容量墙）→ DCP 解码上下文并行（KV 沿序列维度分片、用 Scratch Buffer 复用通信）→ 并行切分策略全景与 PD 分离（TP/PP/EP/SP/CP 五把刀怎么切、怎么组合，以及 prefill:decode 实例配比的算法）→ KV Cache 全景（为什么能缓存、到底多大、三层优化分类与五个可量化旋钮）→ KV Cache 工程实现（SGLang 两级内存池与 HiCache、vLLM 分页 Block 管理与跨层统一布局、AttentionStore 在昆仑芯 P800 上的实测）→ SGLang HiCache L2 在昆仑芯 P800/P900 上的适配与调优实战（分层架构与净收益公式 → 布局选择 page_first_direct → layer_first 与 DMA 段数 → 异步搬运、NUMA 亲和、透明大页、PCIe IDO 保序 → 写入策略语义修复与 Ghost List、TP 组共享 Host KV → 端到端 TTFT 从 28.83s 降到 18.45s）→ Mooncake 以 KVCache 为中心的 PD 分离架构（Conductor 只调度、实例角色层才分离，四张图对比 vLLM 的 Disagg Proxy + KV Connector 方案与非 PD 单体，以及 Mooncake 如何挂进 vLLM 当外置 KV 层）。回答的是「模型算完之后，系统层还要解决什么」，与「前沿架构解码手记」的模型侧改造互为表里。</p>
+      <ul class="post-list">
+        {sys.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-fw">vLLM 与 SGLang 框架解码手记</h2>
+      <p class="series-tag">系列 · 共 10 篇，循序渐进：从为什么需要推理引擎 → vLLM 原理 → SGLang 原理 → 共同前沿（同步停顿/投机解码/PD 分离/低比特量化）→ 2026 年 7 月版本演进 → 支持的模型与选型指南 → 图模式（CUDA Graph）→ vLLM-Kunlun 落点 → Wan2.2 双专家 MoE 与 vllm-omni 引擎剖析 → DeepInfer 深度解析（四层架构、Wide-EP 与 EPLB、DSpark 变长验证、SWA Bounded Replay、零开销调度，以及 DeepSeek 没开源的三块）。把 vLLM/SGLang 每日跟踪的内容整合进一条主线，并配自绘 SVG 架构图，每篇附英文对照。</p>
+      <ul class="post-list">
+        {fw.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 class="cat-head" id="c-multi">三 · 多模态与具身</h2>
+      <p class="cat-note">从「会看」到「会动」：多模态模型的演进路径、机器人策略与世界模型，以及绕不开的经典论文。</p>
+
+      <h2 id="s-vla">VLA 解码手记</h2>
+      <p class="series-tag">系列 · 共 9 篇，循序渐进：从"看懂"到"动手"（VLA 是什么）→ 动作生成的发动机（Diffusion Policy / Flow Matching / Action Chunking / 低延迟）→ π 系列演进（π0→π0.7）→ 国内重点玩家（蚂蚁灵波 / 小米 / 腾讯）→ 世界模型与落地（数据飞轮 / scaling 瓶颈 / 投资视角）→ RT-1 离散动作路线（TokenLearner / 因果掩码 / 交叉熵）→ V-JEPA 2 视频自监督世界模型 → Dreamer V3 世界模型 RL → Octo（27M 通用机器人策略，把"可微调到新本体"做成工程问题）。把"多模态解码手记（二）的 LLaVA"自然延伸为机器人的"动手"能力，每篇附英文对照。</p>
+      <ul class="post-list">
+        {vla.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-mm">多模态解码手记</h2>
+      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
+      <ul class="post-list">
+        {mm.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-pp">论文科普手记</h2>
       <p class="series-tag">系列 · 共 2 篇（开篇）。把大模型时代绕不开的「经典论文」写成可读笔记：从定义注意力的 Transformer（2017）→ 把扩散去噪范式搬进机器人动作生成的 Diffusion Policy（2023）。与「VLA 解码手记」的动作生成发动机、本博客各工程系列互为补充，每篇附英文对照。</p>
       <ul class="post-list">
         {pp.map((p) => (
@@ -224,15 +336,10 @@ const aihot = Object.entries(aihotMods)
         ))}
       </ul>
 
-      <h2>社区跟踪手记</h2>
-      <p class="series-tag">系列 · 共 3 篇。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
-      <ul class="post-list">
-        {tr.map((p) => (
-          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
-        ))}
-      </ul>
+      <h2 class="cat-head" id="c-train">四 · 训练与智能体</h2>
+      <p class="cat-note">推理之外的两块：把模型训出来的那一侧（RL 训练基础设施），以及把模型用起来的那一侧（Agent 定义的负载形态）。</p>
 
-      <h2>强化学习训练手记</h2>
+      <h2 id="s-rl">强化学习训练手记</h2>
       <p class="series-tag">系列 · 共 1 篇（开篇，持续更新）。补上站内此前缺失的一块：大模型与机器人共用的「训练侧」基础设施。开篇讲分布式 RL 训练——为什么 RLHF 不能单进程一锅炖（rollout 占一个 PPO step 约 80% 时间）、Actor / Critic / Reference / Reward 四角色怎么解耦到独立 GPU 池、vLLM 或 SGLang 如何充当 Rollout Engine、PPO 与 GRPO 的损失公式与「去掉 Critic」的代价、Weight Sync 的 Ray Object Store 与 NCCL 两条路径，以及它如何同时服务文本 RLHF 与机器人 VLA 的 RLAIF。与「推理系统基础设施手记」的推理侧优化互为表里，每篇附英文对照。</p>
       <ul class="post-list">
         {rl.map((p) => (
@@ -240,7 +347,18 @@ const aihot = Object.entries(aihotMods)
         ))}
       </ul>
 
-      <h2>每日AI热点</h2>
+      <h2 id="s-ag">智能体手记</h2>
+      <p class="series-tag">系列 · 共 1 篇（开篇，持续更新）。把散落在每日追踪里的 Agent 知识串成体系：能力栈（模型 / 规划 / 工具 / 记忆）→ 工具调用与 MCP → 上下文工程（1M-token 目录注意力）→ 执行范式与编排（Orchestrator + 执行者）→ Agentic 负载如何把 KV Cache 从显存问题变成调度问题。核心结论是 Agent 定义了「变长 / 分叉 / 多轮」的负载形态，击穿了推理引擎的静态调度假设，从而与「推理系统基础设施手记」的 HiCache / HiSparse / DCP / KV 量化串成一条完整闭环，每篇附英文对照。</p>
+      <ul class="post-list">
+        {ag.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 class="cat-head" id="c-daily">五 · 时效跟踪</h2>
+      <p class="cat-note">谁在哪天落了什么、谁在掉队。补原理型文章缺的那一半——版本、commit、适配进度。</p>
+
+      <h2 id="s-aihot">每日AI热点</h2>
       <p class="series-tag">系列 · 共 {aihot.length} 篇（持续更新），把每天 vLLM / SGLang 上游、国产模型适配、投机解码与推理优化的一线进展，做成「同一天同框 / 谁在掉队」的时效笔记，补足框架解码手记偏原理、少时效的部分，每篇附英文对照。</p>
       <ul class="post-list">
         {aihot.slice(0, 1).map((p) => (
@@ -248,6 +366,14 @@ const aihot = Object.entries(aihotMods)
         ))}
       </ul>
       <p class="series-more"><a href={base + 'blog/aihot/'}>查看全部 {aihot.length} 期 →</a></p>
+
+      <h2 id="s-tr">社区跟踪手记</h2>
+      <p class="series-tag">系列 · 共 3 篇。把每日 vLLM / SGLang 上游 commit、模型 cookbook、国产模型适配进度，按「同一天同框 / 谁在掉队」的对照视角做成可读笔记，补足框架解码手记里偏原理、少时效的部分，每篇附英文对照。</p>
+      <ul class="post-list">
+        {tr.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
 
       <section class="engage">
         <p class="engage-tip">觉得这些技术笔记有用？欢迎请作者喝咖啡 ☕️</p>
