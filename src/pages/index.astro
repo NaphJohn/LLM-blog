@@ -57,8 +57,15 @@ const fa = [
 ];
 const op = [
   { href: base + 'blog/op1-mla-operator', title: '（一）MLA 多头潜在注意力的算子级实现：c_kv / W_DKV / W_UK / W_UV 逐行伪代码', date: '2026-08-07' },
-  { href: base + 'blog/op2-model-quantization', title: '（二）模型量化部署——从 FP16 到 FP4 的精度压缩谱系（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化）', date: '2026-09-08' },
+  { href: base + 'blog/op2-model-quantization', title: '（二）模型量化——从精度谱系到四条路线的总览（量化手记全系列的导读入口）', date: '2026-09-08' },
   { href: base + 'blog/op3-eagleqbsa', title: '（三）昇腾 EagleQBSA——量化×稀疏联合注意力：QK INT8 / PV FP8 分布感知配方与昇腾 950 Vector 侧优化（整网最高 7.6×）', date: '2026-10-21' },
+];
+const qt = [
+  { href: base + 'blog/qt1-quantization-basics', title: '（一）量化的基本语言——粒度、对称性、校准，与四条路线怎么选', date: '2026-10-27' },
+  { href: base + 'blog/qt2-rtn-gptq', title: '（二）RTN 与 GPTQ——从「直接取整」到「用 Hessian 补偿误差」', date: '2026-10-27' },
+  { href: base + 'blog/qt3-smoothquant-awq', title: '（三）SmoothQuant 与 AWQ——激活 outlier 的两条相反解法', date: '2026-10-27' },
+  { href: base + 'blog/qt4-quarot-spinquant', title: '（四）QuaRot / SpinQuant / DuQuant——用旋转把 outlier 摊平，W4A4 的唯一出路', date: '2026-10-27' },
+  { href: base + 'blog/qt5-kv-cache-fp4', title: '（五）KV Cache 量化与 FP4 前沿——一条正交的压缩维度', date: '2026-10-27' },
 ];
 const pp = [
   { href: base + 'blog/pp1-transformer', title: '（一）Transformer 精读：用「注意力」取代循环，把序列建模变成可并行计算', date: '2026-08-12' },
@@ -101,7 +108,7 @@ const aihot = Object.entries(aihotMods)
   })
   .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-// 五大分类：把 12 个系列按「你在解决哪一类问题」重新聚合，顶部概览用
+// 五大分类：把 13 个系列按「你在解决哪一类问题」重新聚合，顶部概览用
 const cats = [
   {
     name: '模型与解码算法',
@@ -110,6 +117,7 @@ const cats = [
       { title: '前沿架构解码手记', count: fa.length, anchor: '#s-fa' },
       { title: '推测解码手记', count: spec.length, anchor: '#s-spec' },
       { title: '算子讲解手记', count: op.length, anchor: '#s-op' },
+      { title: '量化手记', count: qt.length, anchor: '#s-qt' },
     ],
   },
   {
@@ -240,7 +248,7 @@ const totalBi = totalAll - aihot.length;
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge />
-      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十二个系列按五大分类组织，共 {totalAll} 篇，多数篇目提供中英对照。</p>
+      <p class="lead">记录大模型技术、多模态的实战知识笔记。本站以中文为主；十三个系列按五大分类组织，共 {totalAll} 篇，多数篇目提供中英对照。</p>
 
       <a class="pan-cta" href={base + 'panorama/'}>
         <strong>端到端推理全景 →</strong>
@@ -283,9 +291,17 @@ const totalBi = totalAll - aihot.length;
       </ul>
 
       <h2 id="s-op">算子讲解手记</h2>
-      <p class="series-tag">系列 · 共 3 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级，第二篇模型量化部署（FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache 量化），第三篇昇腾 EagleQBSA 量化×稀疏联合注意力（QK 按块 INT8 + V/P 按通道 FP8 的分布感知配方、Cube→Vector 直搬转置与 Softmax 归约列化，整网注意力最高 7.6×），后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 3 篇（持续更新）。把前沿架构里常被一笔带过的算子写成可照着实现的逐行伪代码：首篇 MLA 多头潜在注意力的 c_kv / W_DKV / W_UK / W_UV 算子与缓存压缩量级；第二篇模型量化本身就是量化手记的导读入口——保留精度谱系表，另加一张按「改什么」分成四条路线的谱系总表（RTN / GPTQ / AWQ / SmoothQuant / QuaRot / SpinQuant / DuQuant / KIVI 的上限位宽、计算成本、校准需求与可叠加性），想深入某个方法直接跳对应手记；第三篇昇腾 EagleQBSA 量化×稀疏联合注意力（QK 按块 INT8 + V/P 按通道 FP8 的分布感知配方、Cube→Vector 直搬转置与 Softmax 归约列化，整网注意力最高 7.6×）。后续覆盖 GQA / MQA、归一化、路由等算子。每篇附英文对照。</p>
       <ul class="post-list">
         {op.map((p) => (
+          <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
+        ))}
+      </ul>
+
+      <h2 id="s-qt">量化手记</h2>
+      <p class="series-tag">系列 · 共 5 篇，循序渐进：从量化的公分母（一个反量化公式 + 粒度 / 对称性 / 校准三个旋钮）→ RTN 与 GPTQ（W4A16 主线，OBS 误差补偿的完整推导、Cholesky 与惰性批量更新两个工程创新）→ SmoothQuant 与 AWQ（激活 outlier 的两条相反解法：搬走 vs 放大保护）→ QuaRot / SpinQuant / DuQuant（用正交旋转把 outlier 摊平，唯一能到 W4A4 的路线）→ KV Cache 量化与 FP4 前沿（一条与权重量化正交的压缩维度、KIVI 的 per-channel K + per-token V、NVFP4 微缩放如何改写选型）。前三篇讲清「为什么」，后两篇讲清「能到哪」，收尾给 2026 年的硬件决定格式的现实选型表。每篇附英文对照，并与「算子讲解手记（二）」的谱系总表互为索引。</p>
+      <ul class="post-list">
+        {qt.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
         ))}
       </ul>

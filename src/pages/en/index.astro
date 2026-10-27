@@ -57,8 +57,15 @@ const fa = [
 ];
 const op = [
   { href: base + 'en/blog/op1-mla-operator', title: '(1) MLA Operator-Level — c_kv / W_DKV / W_UK / W_UV Line-by-Line Pseudocode', date: '2026-08-07' },
-  { href: base + 'en/blog/op2-model-quantization', title: '(2) Model Quantization for Deployment — the precision-compression spectrum from FP16 to FP4', date: '2026-09-08' },
+  { href: base + 'en/blog/op2-model-quantization', title: '(2) Model Quantization — from the precision spectrum to the four routes (entry point to the whole Quantization Notes series)', date: '2026-09-08' },
   { href: base + 'en/blog/op3-eagleqbsa', title: '(3) Ascend EagleQBSA — Quantized × Sparse Joint Attention: the distribution-aware INT8 QK / FP8 PV recipe and Ascend 950 Vector-side tuning (up to 7.6× on attention modules)', date: '2026-10-21' },
+];
+const qt = [
+  { href: base + 'en/blog/qt1-quantization-basics', title: '(1) The Basic Language — granularity, symmetry, calibration, and how to pick among the four routes', date: '2026-10-27' },
+  { href: base + 'en/blog/qt2-rtn-gptq', title: '(2) RTN and GPTQ — from naive rounding to Hessian-compensated error', date: '2026-10-27' },
+  { href: base + 'en/blog/qt3-smoothquant-awq', title: '(3) SmoothQuant and AWQ — two opposite answers to activation outliers', date: '2026-10-27' },
+  { href: base + 'en/blog/qt4-quarot-spinquant', title: '(4) QuaRot, SpinQuant, DuQuant — flattening outliers with rotation, the only route to W4A4', date: '2026-10-27' },
+  { href: base + 'en/blog/qt5-kv-cache-fp4', title: '(5) KV Cache Quantization and the FP4 Frontier — an orthogonal compression axis', date: '2026-10-27' },
 ];
 const pp = [
   { href: base + 'en/blog/pp1-transformer', title: '(1) Transformer Deep Read — Replacing Recurrence with Attention, Making Sequence Modeling Parallel', date: '2026-08-12' },
@@ -101,7 +108,7 @@ const hot = Object.entries(hotMods)
   })
   .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-// Five categories regrouping the twelve series by "what problem are you solving"
+// Five categories regrouping the thirteen series by "what problem are you solving"
 const cats = [
   {
     name: 'Models & Decoding Algorithms',
@@ -110,6 +117,7 @@ const cats = [
       { title: 'Frontier Architecture Notes', count: fa.length, anchor: '#s-fa' },
       { title: 'Speculative Decoding Notes', count: spec.length, anchor: '#s-spec' },
       { title: 'Operator Notes', count: op.length, anchor: '#s-op' },
+      { title: 'Quantization Notes', count: qt.length, anchor: '#s-qt' },
     ],
   },
   {
@@ -220,7 +228,7 @@ const totalBi = totalAll - hot.length;
     <main>
       <h1>大模型技术notes</h1>
       <TodayBadge lang="en" />
-      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; twelve series organized into five categories, {totalAll} posts so far, most bilingual.</p>
+      <p class="lead">Notes on LLM tech and multimodality. Chinese-first; thirteen series organized into five categories, {totalAll} posts so far, most bilingual.</p>
 
       <a class="pan-cta" href={base + 'en/panorama/'}>
         <strong>The End-to-End Inference Panorama →</strong>
@@ -269,9 +277,20 @@ const totalBi = totalAll - hot.length;
       </ul>
 
       <h2 id="s-op">Operator Notes</h2>
-      <p class="series-tag">Series · 3 episodes (ongoing). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; episode two is model quantization for deployment (FP8/INT4/AWQ·GPTQ/FP4 QAT/KV Cache quantization); episode three is Ascend EagleQBSA quantized × sparse joint attention (the distribution-aware recipe of per-block INT8 QK plus per-channel FP8 V/P, Cube-to-Vector transfer with transpose and columnized Softmax reduction, up to 7.6× on attention modules); later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
+      <p class="series-tag">Series · 3 episodes (ongoing). Turn the operators frontier architectures gloss over into line-by-line pseudocode you can implement: episode one is MLA's c_kv / W_DKV / W_UK / W_UV operator and its cache-compression magnitude; episode two is model quantization, which now doubles as the entry point to the whole Quantization Notes series — it keeps the precision spectrum and adds a lineage table that sorts RTN / GPTQ / AWQ / SmoothQuant / QuaRot / SpinQuant / DuQuant / KIVI into four routes by "what they change", with bit-width ceiling, compute cost, calibration needs and which pairs stack; episode three is Ascend EagleQBSA quantized × sparse joint attention (the distribution-aware recipe of per-block INT8 QK plus per-channel FP8 V/P, Cube-to-Vector transfer with transpose and columnized Softmax reduction, up to 7.6× on attention modules); later posts cover GQA / MQA, normalization, routing and more. Each post has a Chinese counterpart.</p>
       <ul class="post-list">
         {op.map((p) => (
+          <li>
+            <a href={p.href}>{p.title}</a>
+            <div class="date">{p.date}</div>
+          </li>
+        ))}
+      </ul>
+
+      <h2 id="s-qt">Quantization Notes</h2>
+      <p class="series-tag">Series · 5 episodes, in order: the common denominator of quantization (one dequantization formula plus three knobs — granularity, symmetry, calibration) → RTN and GPTQ (the W4A16 mainline, a full derivation of OBS error compensation, and the two engineering innovations of Cholesky and lazy batching) → SmoothQuant and AWQ (two opposite answers to activation outliers: move them, or enlarge and protect them) → QuaRot / SpinQuant / DuQuant (flatten outliers with an orthogonal rotation, the only route that reaches W4A4) → KV Cache quantization and the FP4 frontier (an axis orthogonal to weight quantization, KIVI's per-channel K plus per-token V, and how NVFP4 micro-scaling rewrites the selection). The first three explain why, the last two explain how far you can go, and the close gives a 2026 hardware-decides-format cheat sheet. Each post has a Chinese counterpart and cross-links to the lineage table in Operator Notes (2).</p>
+      <ul class="post-list">
+        {qt.map((p) => (
           <li>
             <a href={p.href}>{p.title}</a>
             <div class="date">{p.date}</div>
