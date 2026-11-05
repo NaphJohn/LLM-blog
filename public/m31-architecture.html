@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiniMax M3.1 Flash 架构详解</title>
+<style>
+  :root{
+    --bg:#FBFAF7; --card:#FFFFFF; --ink:#1E1E1C; --ink2:#4A4A46; --ink3:#8A8A83;
+    --line:#E3E0D8; --line2:#CFCBC0;
+    --purple:#534AB7; --purple-bg:#EEEDFE; --purple-line:#CECBF6;
+    --teal:#0F6E56; --teal-bg:#E1F5EE; --teal-line:#9FE1CB;
+    --amber:#854F0B; --amber-bg:#FAEEDA; --amber-line:#FAC775;
+    --blue:#185FA5; --blue-bg:#E6F1FB; --blue-line:#B5D4F4;
+    --red:#A32D2D; --red-bg:#FCEBEB; --red-line:#F7C1C1;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px; line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px; margin:0 auto; padding:56px 32px 96px;}
+
+  header.title{border-bottom:2px solid var(--ink); padding-bottom:22px; margin-bottom:14px;}
+  header.title h1{font-size:27px; font-weight:600; margin:0 0 10px; letter-spacing:-0.4px;}
+  header.title .sub{font-size:13.5px; color:var(--ink2);}
+  .meta-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px;}
+  .chip{font-size:11.5px; padding:3px 10px; border-radius:100px; border:1px solid var(--line2);
+        color:var(--ink2); background:var(--card); font-family:var(--mono);}
+
+  h2{font-size:19px; font-weight:600; margin:52px 0 6px; padding-top:14px;
+     border-top:1px solid var(--line); letter-spacing:-0.2px;}
+  h2 .num{font-family:var(--mono); font-size:13px; color:var(--ink3); margin-right:10px; font-weight:400;}
+  h3{font-size:15px; font-weight:600; margin:30px 0 8px;}
+  h4{font-size:13.5px; font-weight:600; margin:20px 0 6px; color:var(--ink2);}
+  p{margin:10px 0; color:var(--ink2);}
+  p strong,li strong{color:var(--ink); font-weight:600;}
+  code{font-family:var(--mono); font-size:12.5px; background:#F1EFE8; padding:1.5px 5px;
+       border-radius:4px; color:#3C3489;}
+  ul,ol{margin:10px 0; padding-left:22px; color:var(--ink2);}
+  li{margin:5px 0;}
+  a{color:var(--blue);}
+
+  .callout{border-left:3px solid var(--purple-line); background:var(--purple-bg);
+           padding:14px 18px; border-radius:0 8px 8px 0; margin:18px 0; font-size:13.5px;}
+  .callout.warn{border-left-color:var(--amber-line); background:var(--amber-bg);}
+  .callout.note{border-left-color:var(--teal-line); background:var(--teal-bg);}
+  .callout .lab{font-size:11px; letter-spacing:0.6px; text-transform:uppercase;
+                color:var(--ink3); font-weight:600; display:block; margin-bottom:4px;}
+  .callout p{margin:4px 0;}
+
+  table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13px;}
+  th{text-align:left; font-weight:600; font-size:11.5px; letter-spacing:0.4px;
+     text-transform:uppercase; color:var(--ink3); padding:8px 10px;
+     border-bottom:1.5px solid var(--line2); background:transparent;}
+  td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink2);}
+  td:first-child{color:var(--ink); font-weight:500; white-space:nowrap;}
+  tr:hover td{background:#FDFCF9;}
+  td.mono,th.mono,td.v{font-family:var(--mono); font-size:12px;}
+  td.v{color:var(--ink); font-weight:500; white-space:nowrap;}
+  .hl{background:#FFF9E8;}
+  .new{color:var(--teal); font-weight:600;}
+  .chg{color:var(--red); font-weight:600;}
+
+  figure{margin:24px 0; background:var(--card); border:1px solid var(--line);
+         border-radius:12px; padding:20px 18px 14px;}
+  figure svg{display:block; width:100%; height:auto;}
+  figcaption{font-size:11.5px; color:var(--ink3); margin-top:12px; text-align:center;
+             border-top:1px solid var(--line); padding-top:10px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0;}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px;}
+  .panel h4{margin-top:0;}
+  .kpi{display:flex; align-items:baseline; gap:8px; margin:6px 0;}
+  .kpi .n{font-family:var(--mono); font-size:20px; font-weight:600; color:var(--ink); letter-spacing:-0.5px;}
+  .kpi .u{font-size:12px; color:var(--ink3);}
+
+  pre{background:#2C2C2A; color:#E8E6DF; padding:16px 18px; border-radius:8px;
+      overflow-x:auto; font-family:var(--mono); font-size:12px; line-height:1.65; margin:14px 0;}
+  pre .c{color:#8A8A7E;}
+  pre .k{color:#CECBF6;}
+  pre .s{color:#9FE1CB;}
+
+  .toc{background:var(--card); border:1px solid var(--line); border-radius:10px;
+       padding:18px 22px; margin:28px 0 8px; font-size:13px;}
+  .toc ol{margin:0; padding-left:20px; columns:2; column-gap:32px;}
+  .toc li{margin:4px 0;}
+  .toc a{color:var(--ink2); text-decoration:none;}
+  .toc a:hover{color:var(--purple);}
+
+  footer{margin-top:64px; padding-top:20px; border-top:1px solid var(--line);
+         font-size:11.5px; color:var(--ink3);}
+
+  @media (max-width:720px){
+    .wrap{padding:32px 18px 64px;}
+    .grid2{grid-template-columns:1fr;}
+    .toc ol{columns:1;}
+    header.title h1{font-size:22px;}
+  }
+
+  /* ---- 站内导航条 ---- */
+  .backlink{display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px;
+            font-size:12.5px; margin-bottom:30px; padding-bottom:14px;
+            border-bottom:1px solid var(--line);}
+  .backlink a{color:var(--ink2); text-decoration:none;}
+  .backlink a:hover{color:var(--purple);}
+  .backlink .sep{color:var(--line2);}
+  .backlink .here{color:var(--ink3);}
+
+  /* ---- 暗色模式：文档保持浅色「纸面」，只换外部画布 ---- */
+  :root[data-theme="dark"] body{background:#14161A;}
+  :root[data-theme="dark"] .wrap{
+    background:var(--bg); border:1px solid #2A2E35; border-radius:14px;
+    margin-top:28px; margin-bottom:56px; padding:44px 32px 72px;
+    box-shadow:0 8px 40px rgba(0,0,0,.45);
+  }
+  :root[data-theme="dark"] .backlink{border-bottom-color:#E3E0D8;}
+  @media (max-width:720px){
+    :root[data-theme="dark"] .wrap{margin-top:14px; padding:26px 18px 48px; border-radius:10px;}
+  }
+</style>
+<script is:inline>
+  (function () {
+    try {
+      var t = localStorage.getItem('theme');
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<div class="wrap">
+
+<nav class="backlink">
+  <a href="/LLM-blog/">← 大模型技术notes</a>
+  <span class="sep">/</span>
+  <a href="/LLM-blog/blog/fa10-minimax-m31-flash">fa10 · MiniMax M3.1-Flash</a>
+  <span class="sep">/</span>
+  <span class="here">架构详解（附件页）</span>
+</nav>
+
+<header class="title">
+  <h1>MiniMax M3.1 Flash 架构详解</h1>
+  <div class="sub">428B 总参 / 23B 激活 · 60 层全稀疏注意力 · 1M 上下文 · 原生多模态 MoE</div>
+  <div class="meta-row">
+    <span class="chip">2026-10 发布</span>
+    <span class="chip">minimax-community</span>
+    <span class="chip">MiniMaxM3SparseForCausalLM</span>
+    <span class="chip">252.4 GB / 48 shards</span>
+  </div>
+</header>
+
+<div class="toc">
+  <ol>
+    <li><a href="#s1">整体骨架</a></li>
+    <li><a href="#s2">完整参数清单</a></li>
+    <li><a href="#s3">单层数据流与张量形状</a></li>
+    <li><a href="#s4">MSA 稀疏注意力机制</a></li>
+    <li><a href="#s5">MoE 路由细节</a></li>
+    <li><a href="#s6">参数量核算</a></li>
+    <li><a href="#s7">DSpark 投机解码</a></li>
+    <li><a href="#s8">量化与权重布局</a></li>
+    <li><a href="#s9">视觉塔与多模态</a></li>
+    <li><a href="#s10">M3 → M3.1 逐项 diff</a></li>
+    <li><a href="#s11">部署要点与坑</a></li>
+    <li><a href="#s12">数据存疑处</a></li>
+  </ol>
+</div>
+
+<!-- ========== 1 ========== -->
+<h2 id="s1"><span class="num">01</span>整体骨架</h2>
+
+<p>M3.1 的主干拓扑和 M3 完全一致，是一个标准的 decoder-only 混合架构：前 3 层稠密、后 57 层 MoE，注意力在全部 60 层都走块稀疏。真正的改动集中在三处——注意力覆盖率、量化训练、投机解码头。</p>
+
+<figure>
+<svg viewBox="0 0 680 552" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>MiniMax M3.1 Flash 整体架构</title>
+<defs>
+<marker id="ar1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect x="70" y="44" width="150" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="145" y="66" text-anchor="middle" dominant-baseline="central" fill="#0C447C" font-family="sans-serif" font-size="14" font-weight="500">文本 token</text>
+<rect x="265" y="44" width="150" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="340" y="66" text-anchor="middle" dominant-baseline="central" fill="#0C447C" font-family="sans-serif" font-size="14" font-weight="500">图像 672px</text>
+<rect x="460" y="44" width="150" height="44" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="535" y="66" text-anchor="middle" dominant-baseline="central" fill="#0C447C" font-family="sans-serif" font-size="14" font-weight="500">视频 ≤4 帧</text>
+
+<path d="M145 88 V120" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+<path d="M340 88 V120" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+<path d="M535 88 V120" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+<rect x="90" y="124" width="500" height="56" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="145" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="13" font-weight="500">Tokenizer + CLIP 视觉塔（32 层）</text>
+<text x="340" y="165" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">patch 14 · hidden 1280 · 2×2 patch merge → 投影 6144</text>
+
+<path d="M340 180 V196" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+<rect x="56" y="200" width="568" height="172" rx="20" fill="#EEEDFE" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="76" y="226" dominant-baseline="central" fill="#3C3489" font-family="sans-serif" font-size="13" font-weight="500">Decoder 主干 · 60 层 · hidden 6144</text>
+<text x="608" y="226" text-anchor="end" dominant-baseline="central" fill="#534AB7" font-family="sans-serif" font-size="12">全 60 层：MSA</text>
+
+<rect x="76" y="244" width="528" height="50" rx="10" fill="#CECBF6" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="96" y="263" dominant-baseline="central" fill="#26215C" font-family="sans-serif" font-size="13" font-weight="500">层 0–2　MSA + 稠密 FFN</text>
+<text x="96" y="282" dominant-baseline="central" fill="#534AB7" font-family="monospace" font-size="12">dense_intermediate_size = 12288</text>
+
+<rect x="76" y="306" width="528" height="50" rx="10" fill="#CECBF6" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="96" y="325" dominant-baseline="central" fill="#26215C" font-family="sans-serif" font-size="13" font-weight="500">层 3–59　MSA + MoE FFN　（57 层）</text>
+<text x="96" y="344" dominant-baseline="central" fill="#534AB7" font-family="monospace" font-size="12">128 routed top-4 + 1 shared · expert intermediate 3072</text>
+
+<path d="M192 372 V400" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+<path d="M488 372 V400" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+<rect x="56" y="404" width="272" height="56" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="192" y="423" text-anchor="middle" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="13" font-weight="500">LM head（独立，不共享）</text>
+<text x="192" y="443" text-anchor="middle" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="12">vocab 200064 → 文本输出</text>
+
+<rect x="352" y="404" width="272" height="56" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="488" y="423" text-anchor="middle" dominant-baseline="central" fill="#633806" font-family="sans-serif" font-size="13" font-weight="500">DSpark 草稿头</text>
+<text x="488" y="443" text-anchor="middle" dominant-baseline="central" fill="#854F0B" font-family="monospace" font-size="12">5 层 · 1.96B · 2.3 GB</text>
+
+<path d="M192 460 V484" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+<path d="M488 460 V484" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+<rect x="56" y="488" width="568" height="44" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="340" y="510" text-anchor="middle" dominant-baseline="central" fill="#444441" font-family="sans-serif" font-size="12">草稿块并行提出候选 → 主模型一次并行校验，输出分布不变</text>
+</svg>
+<figcaption>图 1　主干结构。注意 LM head 与 embedding 不绑定（tie_word_embeddings: false），各占约 1.23B 参数。</figcaption>
+</figure>
+
+<!-- ========== 2 ========== -->
+<h2 id="s2"><span class="num">02</span>完整参数清单</h2>
+
+<p>以下全部取自模型仓库 <code>config.json</code> 的 <code>text_config</code>，未做近似。</p>
+
+<h3>2.1 文本主干</h3>
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>num_hidden_layers</td><td class="v">60</td><td>总层数</td></tr>
+<tr><td>hidden_size</td><td class="v">6144</td><td>残差流宽度</td></tr>
+<tr><td>num_attention_heads</td><td class="v">64</td><td>Q 头数</td></tr>
+<tr><td>num_key_value_heads</td><td class="v">4</td><td>KV 头数，GQA 分组比 16:1</td></tr>
+<tr><td>head_dim</td><td class="v">128</td><td>单头维度。64×128=8192 &gt; 6144，Q/O 投影是「先扩后缩」</td></tr>
+<tr><td>intermediate_size</td><td class="v">3072</td><td>MoE 专家 FFN 中间维</td></tr>
+<tr><td>dense_intermediate_size</td><td class="v">12288</td><td>前 3 层稠密 FFN 中间维</td></tr>
+<tr><td>shared_intermediate_size</td><td class="v">3072</td><td>共享专家中间维</td></tr>
+<tr><td>num_local_experts</td><td class="v">128</td><td>每 MoE 层路由专家数</td></tr>
+<tr><td>num_experts_per_tok</td><td class="v">4</td><td>每 token 激活专家数</td></tr>
+<tr><td>n_shared_experts</td><td class="v">1</td><td>共享专家数</td></tr>
+<tr><td>scoring_func</td><td class="v">"sigmoid"</td><td>路由打分。非 softmax，专家间不争夺概率质量</td></tr>
+<tr><td>use_routing_bias</td><td class="v">true</td><td>可学习路由偏置，仅用于 top-k 选择，不参与加权</td></tr>
+<tr><td>routed_scaling_factor</td><td class="v">2.0</td><td>路由专家输出放大系数</td></tr>
+<tr><td>hidden_act</td><td class="v">"swigluoai"</td><td>SwiGLU 变体，带截断</td></tr>
+<tr><td>swiglu_alpha</td><td class="v">1.702</td><td>SiLU 门控缩放（即 GELU≈x·σ(1.702x) 的近似系数）</td></tr>
+<tr><td>swiglu_limit</td><td class="v">7.0</td><td>门控值上截断，防止长尾激活爆掉</td></tr>
+<tr><td>tie_word_embeddings</td><td class="v">false</td><td>embedding 与 lm_head 各自独立</td></tr>
+<tr><td>vocab_size</td><td class="v">200064</td><td>词表。预留大量特殊 token（工具调用、图片/视频占位）</td></tr>
+<tr><td>max_position_embeddings</td><td class="v">1048576</td><td>1M 上下文</td></tr>
+<tr><td>torch_dtype</td><td class="v">"bfloat16"</td><td>声明精度；实际权重按量化配置存放</td></tr>
+</tbody>
+</table>
+
+<h3>2.2 归一化</h3>
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>use_gemma_norm</td><td class="v">true</td><td>Gemma 式 RMSNorm：权重按 <code>1 + w</code> 使用，初始化时等效恒等</td></tr>
+<tr><td>rms_norm_eps</td><td class="v">1e-06</td><td>极小，配合 bf16 训练</td></tr>
+<tr><td>use_qk_norm</td><td class="v">true</td><td>Q/K 在注意力前额外归一化</td></tr>
+<tr><td>qk_norm_type</td><td class="v">"per_head"</td><td>逐头归一化，不是跨头。对 16:1 的极端 GQA 是必要的稳定手段</td></tr>
+</tbody>
+</table>
+
+<h3>2.3 位置编码</h3>
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>rope_theta</td><td class="v">10000000</td><td>1e7。远高于常见 1e4，专为超长外推</td></tr>
+<tr><td>rotary_dim</td><td class="v">64</td><td>仅对 128 维中的 64 维做旋转</td></tr>
+<tr><td>partial_rotary_factor</td><td class="v">0.5</td><td>与上式一致。剩下一半维度不带位置信息，是纯内容通道</td></tr>
+</tbody>
+</table>
+
+<div class="callout note">
+<span class="lab">为什么是半维 RoPE</span>
+<p>全维旋转在 1M 长度上会积累严重的位置相位漂移，而且高维旋转对长尾频率的数值精度要求高。只转一半维度，等于把「位置」和「内容」拆成两条正交通道——代价是位置分辨率下降，收益是外推稳定性显著提升。配合 1e7 的 theta，实际是把最慢的旋转周期拉到千万 token 量级。</p>
+</div>
+
+<h3>2.4 稀疏注意力</h3>
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>use_sparse_attention</td><td class="v">true</td><td>总开关</td></tr>
+<tr><td>sparse_block_size</td><td class="v">128</td><td>KV 按 128 token 分块。必须与 vLLM 的 KV cache block size 对齐</td></tr>
+<tr><td>sparse_topk_blocks</td><td class="v">16</td><td>每 query 选 16 个块</td></tr>
+<tr><td>sparse_index_dim</td><td class="v">128</td><td>索引分支维度</td></tr>
+<tr><td>sparse_num_index_heads</td><td class="v">4</td><td>索引头数。轻量粗筛</td></tr>
+<tr><td>sparse_score_type</td><td class="v">"max"</td><td>块内取 max 聚合，不用 mean。保证不漏块内强信号</td></tr>
+<tr><td>sparse_init_block</td><td class="v">0</td><td>不强制保留开头块（无 attention sink）</td></tr>
+<tr><td>sparse_local_block</td><td class="v">1</td><td>强制保留 1 个相邻局部块</td></tr>
+<tr><td>sparse_attention_freq</td><td class="v">[1]×60</td><td>60 层全部启用，无回退</td></tr>
+<tr><td>sparse_disable_index_value</td><td class="v">[1]×60</td><td>索引器逐层全开</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn">
+<span class="lab">注意</span>
+<p><code>sparse_init_block = 0</code> 意味着这个模型<strong>没有 attention sink</strong>。很多长上下文模型的稳定性依赖「永远能看到第一个 token」，M3.1 选择不依赖这个机制。这也是它敢把前 3 层全注意力一起换掉的底气之一——但那 3 层原本可能承担了 sink 的角色，这个取舍目前没有公开的消融数据。</p>
+</div>
+
+<!-- ========== 3 ========== -->
+<h2 id="s3"><span class="num">03</span>单层数据流与张量形状</h2>
+
+<p>把一层拆开看，数据按「归一化 → 稀疏注意力 → 归一化 → MoE → 残差累加」流动。下面标注每一步的实际张量形状（batch=1，序列长 L）。</p>
+
+<figure>
+<svg viewBox="0 0 680 470" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>单层数据流</title>
+<defs>
+<marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect x="48" y="42" width="150" height="40" rx="7" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="123" y="62" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="monospace" font-size="12">[L, 6144]</text>
+<text x="216" y="62" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="12">输入残差流</text>
+
+<path d="M123 82 V104" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+<rect x="48" y="108" width="150" height="40" rx="7" fill="#FAEEDA" stroke="#FAC775" stroke-width="0.5"/>
+<text x="123" y="128" text-anchor="middle" dominant-baseline="central" fill="#633806" font-family="sans-serif" font-size="13" font-weight="500">RMSNorm (Gemma)</text>
+<text x="216" y="128" dominant-baseline="central" fill="#888780" font-family="monospace" font-size="12">1 + w</text>
+
+<path d="M123 148 V170" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+<rect x="48" y="174" width="584" height="112" rx="10" fill="#EEEDFE" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="66" y="194" dominant-baseline="central" fill="#3C3489" font-family="sans-serif" font-size="13" font-weight="500">MSA 稀疏注意力（含 QK-Norm + 部分 RoPE）</text>
+
+<rect x="66" y="206" width="168" height="34" rx="6" fill="#CECBF6" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="150" y="223" text-anchor="middle" dominant-baseline="central" fill="#26215C" font-family="monospace" font-size="11">Q [L,64,128]</text>
+<rect x="246" y="206" width="150" height="34" rx="6" fill="#CECBF6" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="321" y="223" text-anchor="middle" dominant-baseline="central" fill="#26215C" font-family="monospace" font-size="11">K,V [L,4,128]</text>
+<rect x="408" y="206" width="208" height="34" rx="6" fill="#9FE1CB" stroke="#1D9E75" stroke-width="0.5"/>
+<text x="512" y="223" text-anchor="middle" dominant-baseline="central" fill="#04342C" font-family="monospace" font-size="11">索引器 q_idx [L,4,128]</text>
+
+<text x="66" y="262" dominant-baseline="central" fill="#534AB7" font-family="sans-serif" font-size="12">16 块 × 128 token = 2048 token 参与注意力 · 每 KV 组的 16 个 Q 头共享同一次块选择</text>
+
+<path d="M340 286 V308" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+<rect x="48" y="312" width="150" height="40" rx="7" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="123" y="332" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="monospace" font-size="12">+ 残差</text>
+
+<path d="M123 352 V374" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar2)"/>
+
+<rect x="48" y="378" width="150" height="40" rx="7" fill="#FAEEDA" stroke="#FAC775" stroke-width="0.5"/>
+<text x="123" y="398" text-anchor="middle" dominant-baseline="central" fill="#633806" font-family="sans-serif" font-size="13" font-weight="500">RMSNorm → MoE</text>
+
+<rect x="216" y="378" width="416" height="40" rx="7" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="234" y="398" dominant-baseline="central" fill="#085041" font-family="monospace" font-size="11">4/128 专家 → 有效权重 [4·L, 3072] → 回 [L, 6144]</text>
+
+<path d="M424 418 V436" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar2)"/>
+<text x="340" y="452" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">层 0–2 换成稠密 FFN：[L, 12288] 单路，无路由</text>
+</svg>
+<figcaption>图 2　单层数据流。序列维 L 与专家维在 MoE 处发生置换 —— 这是所有 MoE 推理实现里最贵的两次数据搬运。</figcaption>
+</figure>
+
+<h3>3.1 三种层的构成差异</h3>
+<table>
+<thead><tr><th>层</th><th>注意力</th><th>FFN</th><th>FFN 参数/层</th></tr></thead>
+<tbody>
+<tr><td>层 0 – 2（3 层）</td><td>MSA</td><td>稠密，12288</td><td class="v">≈ 226.5 M</td></tr>
+<tr><td>层 3 – 59（57 层）</td><td>MSA</td><td>128 路由 + 1 共享，各 3072</td><td class="v">≈ 7.30 B</td></tr>
+</tbody>
+</table>
+
+<p>注意「稠密层」仅指 FFN 稠密，注意力依然是稀疏的。<code>moe_layer_freq</code> 数组控制的是 FFN 类型，与注意力无关——这两件事在二手文章里经常被混为一谈。</p>
+
+<!-- ========== 4 ========== -->
+<h2 id="s4"><span class="num">04</span>MSA 稀疏注意力机制</h2>
+
+<figure>
+<svg viewBox="0 0 680 322" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>MSA 机制</title>
+<defs>
+<marker id="ar3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<text x="120" y="63" text-anchor="end" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">① KV 分块</text>
+<g fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5">
+<rect x="140" y="46" width="34" height="34" rx="4"/><rect x="180" y="46" width="34" height="34" rx="4"/>
+<rect x="220" y="46" width="34" height="34" rx="4"/><rect x="260" y="46" width="34" height="34" rx="4"/>
+<rect x="300" y="46" width="34" height="34" rx="4"/><rect x="340" y="46" width="34" height="34" rx="4"/>
+<rect x="380" y="46" width="34" height="34" rx="4"/><rect x="420" y="46" width="34" height="34" rx="4"/>
+<rect x="460" y="46" width="34" height="34" rx="4"/><rect x="500" y="46" width="34" height="34" rx="4"/>
+<rect x="540" y="46" width="34" height="34" rx="4"/><rect x="580" y="46" width="34" height="34" rx="4"/>
+</g>
+<text x="620" y="63" dominant-baseline="central" fill="#5F5E5A" font-family="monospace" font-size="11">…8192</text>
+
+<text x="120" y="116" text-anchor="end" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">② 索引打分</text>
+<text x="120" y="134" text-anchor="end" dominant-baseline="central" fill="#888780" font-family="monospace" font-size="11">4 头 · d=128</text>
+<g fill="#FAC775" stroke="#EF9F27" stroke-width="0.5">
+<rect x="140" y="124" width="34" height="10" rx="2"/><rect x="180" y="118" width="34" height="16" rx="2"/>
+<rect x="260" y="112" width="34" height="22" rx="2"/><rect x="300" y="122" width="34" height="12" rx="2"/>
+<rect x="380" y="116" width="34" height="18" rx="2"/><rect x="420" y="108" width="34" height="26" rx="2"/>
+<rect x="460" y="114" width="34" height="20" rx="2"/><rect x="500" y="120" width="34" height="14" rx="2"/>
+<rect x="580" y="110" width="34" height="24" rx="2"/>
+</g>
+<g fill="#EF9F27" stroke="#BA7517" stroke-width="0.5">
+<rect x="220" y="100" width="34" height="34" rx="2"/><rect x="340" y="96" width="34" height="38" rx="2"/>
+<rect x="540" y="104" width="34" height="30" rx="2"/>
+</g>
+<text x="620" y="132" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">块内 max</text>
+
+<text x="120" y="165" text-anchor="end" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">③ Top-16</text>
+<text x="120" y="183" text-anchor="end" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">+1 局部块</text>
+<g fill="none" stroke="#B4B2A9" stroke-width="0.5" stroke-dasharray="3 3">
+<rect x="140" y="150" width="34" height="34" rx="4"/><rect x="180" y="150" width="34" height="34" rx="4"/>
+<rect x="260" y="150" width="34" height="34" rx="4"/><rect x="300" y="150" width="34" height="34" rx="4"/>
+<rect x="380" y="150" width="34" height="34" rx="4"/><rect x="420" y="150" width="34" height="34" rx="4"/>
+<rect x="460" y="150" width="34" height="34" rx="4"/><rect x="500" y="150" width="34" height="34" rx="4"/>
+<rect x="580" y="150" width="34" height="34" rx="4"/>
+</g>
+<g fill="#9FE1CB" stroke="#0F6E56" stroke-width="0.5">
+<rect x="220" y="150" width="34" height="34" rx="4"/><rect x="340" y="150" width="34" height="34" rx="4"/>
+<rect x="540" y="150" width="34" height="34" rx="4"/>
+</g>
+
+<path d="M404 184 V204" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+<text x="120" y="228" text-anchor="end" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">④ 稀疏注意力</text>
+<rect x="140" y="204" width="474" height="48" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.5"/>
+<text x="158" y="221" dominant-baseline="central" fill="#3C3489" font-family="sans-serif" font-size="13" font-weight="500">标准 GQA，只在入选块的真实 K/V 上算</text>
+<text x="158" y="240" dominant-baseline="central" fill="#534AB7" font-family="monospace" font-size="11">64 Q / 4 KV · head_dim 128 · QK-Norm 逐头 · RoPE 64/128 维 θ=1e7</text>
+
+<text x="140" y="274" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">16 块 × 128 = 2048 token，对比 1M 上下文是 1/512</text>
+<text x="140" y="294" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="12">官方口径：per-token 注意力 FLOPs 降 28.4× · prefill 提速 9.7× · decode 提速 15.6×</text>
+</svg>
+<figcaption>图 3　MSA 四步。关键设计是「每个 KV 组的 16 个 Q 头共享同一次块选择」——这让选择开销从 64 份降到 4 份。</figcaption>
+</figure>
+
+<h3>4.1 复杂度账</h3>
+<p>设序列长度 N，块大小 B=128，选 k=16 块。</p>
+<ul>
+<li><strong>全注意力</strong>：每 token 交互 N 个 key，总计算 O(N²·d)</li>
+<li><strong>MSA</strong>：索引打分 O(N·N/B·d_idx) + 注意力 O(N·k·B·d)</li>
+</ul>
+<p>N = 1,048,576 时，N/B = 8192 块。索引阶段每 token 要做 8192 次内积（d_idx=128），注意力阶段只做 2048 次（d=128×4 头 ≈ 512 等效）。索引本身不是免费的，只是比全注意力便宜一个数量级。</p>
+
+<table>
+<thead><tr><th>阶段</th><th>每 token 的 KV 交互量</th><th>相对全注意力</th></tr></thead>
+<tbody>
+<tr><td>1M 全注意力</td><td class="v">1,048,576 × 4 KV 头</td><td>1×</td></tr>
+<tr><td>MSA 索引</td><td class="v">8192 块 × 128 维</td><td>约 1/32</td></tr>
+<tr><td>MSA 注意力</td><td class="v">2048 token × 4 KV 头</td><td>约 1/512</td></tr>
+</tbody>
+</table>
+
+<h3>4.2 工程上的关键约束</h3>
+<div class="callout">
+<span class="lab">KV outer gather Q</span>
+<p>朴素实现是 query-major：每个 query 各自去 HBM 抓自己选中的 16 个块。问题是同一个热门块会被几十个 query 重复加载。MSA 的实际 kernel 把选择矩阵转置成 CSR，改成 key-block-major——一个块只从 HBM 读一次，然后为所有选中它的 query 累加部分注意力再归并。这个转换是 MSA 真正跑得快的原因，不只是 FLOPs 少。</p>
+</div>
+
+<p>这也是为什么 <code>--block-size 128</code> 是硬约束：MSA 的选择粒度必须和 vLLM 的 KV cache 物理块完全一致，否则 CSR 转置后的索引会和显存布局错位。</p>
+
+<!-- ========== 5 ========== -->
+<h2 id="s5"><span class="num">05</span>MoE 路由细节</h2>
+
+<figure>
+<svg viewBox="0 0 680 356" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>MoE 路由</title>
+<defs>
+<marker id="ar4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect x="48" y="44" width="152" height="44" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="124" y="66" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="monospace" font-size="12">[L, 6144]</text>
+<path d="M200 66 H244" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar4)"/>
+<rect x="248" y="44" width="176" height="44" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="336" y="61" text-anchor="middle" dominant-baseline="central" fill="#633806" font-family="sans-serif" font-size="13" font-weight="500">Router gate</text>
+<text x="336" y="78" text-anchor="middle" dominant-baseline="central" fill="#854F0B" font-family="monospace" font-size="11">sigmoid + bias</text>
+
+<path d="M424 58 C 456 58, 456 92, 484 98" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar4)"/>
+<path d="M424 84 C 450 96, 450 172, 484 184" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+<rect x="484" y="88" width="148" height="56" rx="8" fill="#CECBF6" stroke="#7F77DD" stroke-width="0.5"/>
+<text x="558" y="106" text-anchor="middle" dominant-baseline="central" fill="#26215C" font-family="sans-serif" font-size="13" font-weight="500">Top-4 路由专家</text>
+<text x="558" y="125" text-anchor="middle" dominant-baseline="central" fill="#534AB7" font-family="monospace" font-size="11">128 个 · 各 3072</text>
+
+<rect x="484" y="160" width="148" height="56" rx="8" fill="#9FE1CB" stroke="#1D9E75" stroke-width="0.5"/>
+<text x="558" y="178" text-anchor="middle" dominant-baseline="central" fill="#04342C" font-family="sans-serif" font-size="13" font-weight="500">1 个共享专家</text>
+<text x="558" y="197" text-anchor="middle" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="11">全部 token 必经</text>
+
+<text x="268" y="152" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">激活率 4/128 = 3.125%</text>
+<text x="268" y="170" dominant-baseline="central" fill="#888780" font-family="monospace" font-size="11">23B / 428B = 5.4%</text>
+
+<path d="M558 144 V162" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar4)"/>
+<path d="M558 216 V248" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar4)"/>
+
+<rect x="48" y="252" width="584" height="50" rx="8" fill="#EEEDFE" stroke="#7F77DD" stroke-width="0.5"/>
+<text x="68" y="270" dominant-baseline="central" fill="#3C3489" font-family="monospace" font-size="12">out = 2.0 × Σ(top4 p_i · E_i(x)) + E_shared(x)</text>
+<text x="68" y="288" dominant-baseline="central" fill="#534AB7" font-family="sans-serif" font-size="11">swigluoai（α=1.702，limit=7.0）· routed_scaling_factor = 2.0</text>
+
+<text x="48" y="328" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">显存按 428B 常驻，算力只按 23B 结算 —— Flash 的本质是「重存储、轻计算」</text>
+</svg>
+<figcaption>图 4　MoE 路由。sigmoid 打分意味着 128 个专家的分数互相独立，不像 softmax 那样此消彼长。</figcaption>
+</figure>
+
+<h3>5.1 sigmoid + bias 为什么这样设计</h3>
+<p>softmax 路由下，路由概率总和恒为 1，想让某个专家分数高就必须压低别人，负载均衡靠 aux loss 硬拉。sigmoid 让每个专家独立给分，输出只做 top-k 后的重新归一化（这里再乘 2.0 放大）。好处是专家的绝对置信度有表达空间，坏处是容易出现「某些专家永远被选中」。</p>
+<p><code>use_routing_bias = true</code> 就是补这个漏洞的：给每个专家挂一个可学习偏置，<strong>只参与 top-k 排序，不参与最终加权</strong>。训练中偏置按负载情况微调，把冷门专家往上顶一点。这是 DeepSeek 系 V3 之后的标准做法，代价是不增加任何推理 FLOPs。</p>
+
+<h3>5.2 每层 MoE 的搬运形状</h3>
+<pre><span class="c"># 输入</span>
+x: [L, 6144]
+<span class="c"># 路由</span>
+logits = x @ W_gate.T              <span class="c">→ [L, 128]</span>
+scores = sigmoid(logits) + bias    <span class="c">→ [L, 128]（bias 只影响排序）</span>
+idx    = topk(scores, 4)           <span class="c">→ [L, 4]</span>
+w      = gather(scores, idx)       <span class="c">→ [L, 4]，未归一化</span>
+<span class="c"># 计算（按专家分组，permute 后算，再 unpermute）</span>
+tokens_per_expert: [4·L, 6144] → 每专家 [n_e, 6144] @ [6144, 3072] → [n_e, 3072]
+<span class="c"># 合并</span>
+y = 2.0 × Σ w_i · E_i(x) + E_shared(x)   <span class="c">→ [L, 6144]</span></pre>
+
+<p>注意 <code>w</code> 没有做 softmax 归一化——sigmoid 输出本身在 (0,1)，直接相加再乘 2.0。这与 DeepSeek-V3 的「归一化后乘 scale」略有不同，M3.1 选择保留未归一化权重，让路由强度的绝对值有语义。</p>
+
+<!-- ========== 6 ========== -->
+<h2 id="s6"><span class="num">06</span>参数量核算</h2>
+
+<p>官方说 428B / 23B。按配置逐项加，能对上，而且能解释 428 与 23 之间的确切含义。</p>
+
+<h3>6.1 总参数（428B）</h3>
+<table>
+<thead><tr><th>组成</th><th>算式</th><th>参数量</th></tr></thead>
+<tbody>
+<tr><td>路由专家（57 层）</td><td class="mono">57 × 128 × 3 × 6144 × 3072</td><td class="v">413.1 B</td></tr>
+<tr><td>共享专家（57 层）</td><td class="mono">57 × 3 × 6144 × 3072</td><td class="v">3.23 B</td></tr>
+<tr><td>注意力（60 层）</td><td class="mono">60 × (6144×8192 + 2×6144×512 + 8192×6144)</td><td class="v">6.42 B</td></tr>
+<tr><td>稠密 FFN（3 层）</td><td class="mono">3 × 3 × 6144 × 12288</td><td class="v">0.68 B</td></tr>
+<tr><td>Token embedding</td><td class="mono">200064 × 6144</td><td class="v">1.23 B</td></tr>
+<tr><td>LM head（独立）</td><td class="mono">200064 × 6144</td><td class="v">1.23 B</td></tr>
+<tr><td>视觉塔 + 投影（文本侧不计）</td><td class="mono">32 层 ViT + 30720×6144 投影</td><td class="v">≈ 0.8 B</td></tr>
+<tr class="hl"><td><strong>合计</strong></td><td></td><td class="v"><strong>≈ 426.7 B</strong></td></tr>
+</tbody>
+</table>
+
+<p>推算值 426.7B 与官方 428B 差约 1.3B，缺口主要来自各层的 QK-Norm / RMSNorm 权重、视觉塔的位置编码与 patch_merge 层。在这个量级上属于正常舍入——说明 428B 确实是按「文本主干 + embedding + lm_head + 视觉塔」全量计的。</p>
+
+<h3>6.2 激活参数（23B）——为什么是 23 而不是 26</h3>
+<table>
+<thead><tr><th>组成</th><th>算式</th><th>参数量</th></tr></thead>
+<tbody>
+<tr><td>4 个路由专家（57 层）</td><td class="mono">57 × 4 × 3 × 6144 × 3072</td><td class="v">12.91 B</td></tr>
+<tr><td>共享专家（57 层）</td><td class="mono">57 × 3 × 6144 × 3072</td><td class="v">3.23 B</td></tr>
+<tr><td>注意力（60 层）</td><td class="mono">同上</td><td class="v">6.42 B</td></tr>
+<tr><td>稠密 FFN（3 层）</td><td class="mono">同上</td><td class="v">0.68 B</td></tr>
+<tr class="hl"><td><strong>合计</strong></td><td></td><td class="v"><strong>≈ 23.2 B</strong></td></tr>
+</tbody>
+</table>
+
+<div class="callout note">
+<span class="lab">关键结论</span>
+<p>23B 这个数<strong>不含 embedding 和 lm_head</strong>。严格意义上它们是每 token 都要参与计算的，但业界惯例不计入「激活参数」。所以「23B 激活」应该理解为「23B 的逐 token 计算量」，而不是「23B 参数被读进显存」。后者是 428B 全量——这个区别决定了自建部署需要多大规模的机器。</p>
+</div>
+
+<!-- ========== 7 ========== -->
+<h2 id="s7"><span class="num">07</span>DSpark 投机解码</h2>
+
+<figure>
+<svg viewBox="0 0 680 348" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>DSpark 结构</title>
+<defs>
+<marker id="ar5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<rect x="48" y="44" width="584" height="56" rx="8" fill="#EEEDFE" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="68" y="63" dominant-baseline="central" fill="#3C3489" font-family="sans-serif" font-size="13" font-weight="500">主模型隐状态抽取：层 3 / 17 / 31 / 45 / 59</text>
+<text x="68" y="83" dominant-baseline="central" fill="#534AB7" font-family="monospace" font-size="12">5 × 6144 = 30720，fc 投影回 6144（6144 × 30720 = 188.7 M）</text>
+
+<path d="M340 100 V120" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+<rect x="48" y="124" width="190" height="60" rx="8" fill="#FAEEDA" stroke="#EF9F27" stroke-width="0.5"/>
+<text x="143" y="142" text-anchor="middle" dominant-baseline="central" fill="#633806" font-family="sans-serif" font-size="13" font-weight="500">并行草稿骨干</text>
+<text x="143" y="160" text-anchor="middle" dominant-baseline="central" fill="#854F0B" font-family="monospace" font-size="11">5 层 · FFN 12288</text>
+<text x="143" y="176" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="monospace" font-size="11">滑窗 4096</text>
+
+<rect x="254" y="124" width="170" height="60" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="339" y="142" text-anchor="middle" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="13" font-weight="500">Markov 头</text>
+<text x="339" y="160" text-anchor="middle" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="11">rank 256</text>
+<text x="339" y="176" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">块内一阶依赖</text>
+
+<rect x="440" y="124" width="192" height="60" rx="8" fill="#E6F1FB" stroke="#85B7EB" stroke-width="0.5"/>
+<text x="536" y="142" text-anchor="middle" dominant-baseline="central" fill="#0C447C" font-family="sans-serif" font-size="13" font-weight="500">置信度头</text>
+<text x="536" y="160" text-anchor="middle" dominant-baseline="central" fill="#185FA5" font-family="monospace" font-size="11">输入 6400 维</text>
+<text x="536" y="176" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">逐位接受概率</text>
+
+<path d="M143 184 V206" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar5)"/>
+<path d="M339 184 V206" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+<rect x="48" y="210" width="584" height="48" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="68" y="227" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="13" font-weight="500">一次前向产出整块候选 token</text>
+<text x="68" y="246" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12">dspark_block_size = 7 · mask_token_id = 200058 占位 · 独立权重文件 2.3 GB</text>
+
+<path d="M340 258 V278" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#ar5)"/>
+
+<rect x="48" y="282" width="584" height="44" rx="8" fill="#CECBF6" stroke="#7F77DD" stroke-width="0.5"/>
+<text x="340" y="304" text-anchor="middle" dominant-baseline="central" fill="#26215C" font-family="sans-serif" font-size="12">主模型并行校验 → 取最长可信前缀，输出分布与逐 token 解码完全一致</text>
+
+<text x="48" y="342" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="12">SPEED-Bench 平均接受长度 3.97 · coding 5.26 / math 4.91 / writing 2.84</text>
+</svg>
+<figcaption>图 5　DSpark 三段式：并行骨干负责速度，Markov 头修后缀衰减，置信度头决定校验到哪一位。</figcaption>
+</figure>
+
+<h3>7.1 三个组件各自解决什么</h3>
+<table>
+<thead><tr><th>组件</th><th>解决的问题</th><th>配置</th></tr></thead>
+<tbody>
+<tr><td>并行草稿骨干</td><td>串行 draft 的 N 步延迟</td><td class="mono">5 层 · FFN 12288 · SWA 4096</td></tr>
+<tr><td>Markov 头</td><td>纯并行采样导致的块内 token 互不相关（后缀衰减）</td><td class="mono">rank 256 · 两张 200064×256 表</td></tr>
+<tr><td>置信度头</td><td>盲目校验全部位置，浪费验证算力</td><td class="mono">输入 6400 = 6144 + 256</td></tr>
+</tbody>
+</table>
+
+<p>Markov 头的作用值得单独说：纯并行 draft 下，「位置 1 采样出 of、位置 2 独立采样出 problem」这种拼接错误会让后半段接受率断崖式下降。Markov 头用秩 256 的低秩分解给每个位置注入前一位的条件偏移，把接受长度从「前两位准」拉回到「平均 3.97 位准」。</p>
+<p>置信度头的输入 6400 维 = 主模型隐状态 6144 + Markov 特征 256，说明它直接吃的是修正后的表示，而不是原始 logits。</p>
+
+<h3>7.2 接受率实测</h3>
+<table>
+<thead><tr><th>领域</th><th>接受长度</th><th>领域</th><th>接受长度</th></tr></thead>
+<tbody>
+<tr><td>coding</td><td class="v">5.26</td><td>stem</td><td class="v">3.98</td></tr>
+<tr><td>multilingual</td><td class="v">5.04</td><td>summarization</td><td class="v">3.83</td></tr>
+<tr><td>math</td><td class="v">4.91</td><td>humanities</td><td class="v">3.54</td></tr>
+<tr><td>rag</td><td class="v">4.75</td><td>qa</td><td class="v">3.15</td></tr>
+<tr><td>reasoning</td><td class="v">4.21</td><td>writing</td><td class="v">2.84</td></tr>
+<tr><td></td><td></td><td>roleplay</td><td class="v">2.22</td></tr>
+<tr class="hl"><td><strong>SPEED-Bench 平均</strong></td><td class="v"><strong>3.97</strong></td><td>32K 长上下文子集</td><td class="v">3.27</td></tr>
+</tbody>
+</table>
+
+<p>规律很明显：<strong>确定性越强的任务接受率越高</strong>。代码和数学有强语法约束，draft 猜得准；角色扮演和写作自由度大，接受率掉到 2 出头。这也是为什么 MiniMax 把 agentic coding 作为主打场景——那里恰好是 DSpark 收益最大的地方。</p>
+
+<h3>7.3 部署命令</h3>
+<pre>vllm serve MiniMaxAI/MiniMax-M3.1-Flash \
+  --tensor-parallel-size 4 \
+  --block-size 128 \
+  --trust-remote-code \
+  --speculative-config <span class="s">'{"method":"dspark","num_speculative_tokens":7}'</span></pre>
+<p><code>block-size 128</code> 是 MSA 的硬约束，不是调优项。<code>num_speculative_tokens</code> 与 <code>dspark_block_size</code> 需对齐；部分文档写 8，官方 <code>dspark/config.json</code> 里是 7，以配置文件为准。</p>
+
+<!-- ========== 8 ========== -->
+<h2 id="s8"><span class="num">08</span>量化与权重布局</h2>
+
+<h3>8.1 量化配置原文</h3>
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th></tr></thead>
+<tbody>
+<tr><td>quant_method</td><td class="v">"mxfp8"</td></tr>
+<tr><td>activation_scheme</td><td class="v">"dynamic"</td></tr>
+<tr><td>weight_block_size</td><td class="v">[1, 32]</td></tr>
+<tr><td>group_size</td><td class="v">16</td></tr>
+<tr><td>moe_quant_algo</td><td class="v">"NVFP4"</td></tr>
+<tr><td>moe_quant_format</td><td class="v">"nvfp4-pack-quantized"</td></tr>
+</tbody>
+</table>
+
+<h3>8.2 哪些层被量化，哪些被豁免</h3>
+<table>
+<thead><tr><th>组件</th><th>精度</th><th>原因</th></tr></thead>
+<tbody>
+<tr><td>路由专家 MLP</td><td class="v">NVFP4 (W4A4)</td><td>占 97% 参数，量化收益最大</td></tr>
+<tr><td>稠密层 / 注意力线性层</td><td class="v">MXFP8</td><td>数值敏感度中等</td></tr>
+<tr><td>索引器 q_idx / k_idx</td><td class="v">NVFP4</td><td>只影响块选择，误差可容忍</td></tr>
+<tr><td>MoE gate（57 个）</td><td class="v">高精度</td><td>路由决策一旦抖动，整个专家分布漂移</td></tr>
+<tr><td>lm_head</td><td class="v">高精度</td><td>直接决定 logits，舍入误差线性传导到输出</td></tr>
+<tr><td>embed_tokens</td><td class="v">高精度</td><td>稀疏查询，量化收益小</td></tr>
+<tr><td>vision_tower</td><td class="v">高精度</td><td>视觉特征动态范围大</td></tr>
+<tr><td>multi_modal_projector / patch_merge_mlp</td><td class="v">高精度</td><td>跨模态对齐层，误差会放大</td></tr>
+</tbody>
+</table>
+
+<p><code>ignored_layers</code> 共 62 项：57 个 MoE gate（layers.3 – layers.59，与 <code>moe_layer_freq</code> 的 57 个 1 完全对齐）+ lm_head + model.embed_tokens + multi_modal_projector + patch_merge_mlp + vision_tower，其余 5 项均不带层号。<strong>不量化清单里没有注意力输出投影</strong>，说明它对精度的容忍度比 FFN 低但比 gate 高，走的是 MXFP8 而非 NVFP4。</p>
+
+<h3>8.3 体积与 KV cache 的账</h3>
+<table>
+<thead><tr><th>项目</th><th>M3（MXFP8）</th><th>M3.1（混合）</th><th>变化</th></tr></thead>
+<tbody>
+<tr><td>权重</td><td class="v">451.5 GB</td><td class="v">250.1 GB</td><td class="new">−44.6%</td></tr>
+<tr><td>KV cache / token</td><td class="v">61,440 B</td><td class="v">34,560 B</td><td class="new">−43.75%</td></tr>
+<tr><td>4×B300 256K 并发</td><td class="v">28</td><td class="v">76</td><td class="new">×2.7</td></tr>
+</tbody>
+</table>
+
+<p>KV cache 从 61,440 降到 34,560 的构成：4 个 KV 头 × 128 维 × 60 层 × 2（K 和 V）= 61,440 个元素。M3 下每元素 1 字节（FP8），M3.1 下量化到 FP4 后约 0.5625 字节（含 scale 开销），得 34,560。注意这个数不是正好一半，因为 NVFP4 每个 16 元素组要带一个 FP8 的 scale。</p>
+
+<div class="callout warn">
+<span class="lab">Hub 参数计数为何显示 220B</span>
+<p>Hugging Face 按存储的 tensor 元素数统计，而 NVFP4 是打包存储——一个字节装两个值。专家权重打包后，自动计数只认「字节数」，于是 428B 被报成 220B 左右。看 M3 仓库报 427B（全 MXFP8 不打包）就能对上。这是统计口径问题，不是模型缩水。</p>
+</div>
+
+<!-- ========== 9 ========== -->
+<h2 id="s9"><span class="num">09</span>视觉塔与多模态</h2>
+
+<table>
+<thead><tr><th>字段</th><th class="mono">值</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>model_type</td><td class="v">"clip_vision_model"</td><td>CLIP 风格，非 SigLIP</td></tr>
+<tr><td>num_hidden_layers</td><td class="v">32</td><td></td></tr>
+<tr><td>hidden_size</td><td class="v">1280</td><td>远小于文本主干，编码器容量有意做小</td></tr>
+<tr><td>num_attention_heads</td><td class="v">16</td><td>头维 80</td></tr>
+<tr><td>intermediate_size</td><td class="v">5120</td><td>4× 扩展比</td></tr>
+<tr><td>patch_size</td><td class="v">14</td><td>672 / 14 = 48 patch/边</td></tr>
+<tr><td>image_size</td><td class="v">672</td><td>原生分辨率</td></tr>
+<tr><td>position_embedding_type</td><td class="v">"rope" + rope_mode "3d"</td><td>时间/高/宽三维，支持视频</td></tr>
+<tr><td>rope_theta</td><td class="v">10000.0</td><td>与文本主干的 1e7 完全不同</td></tr>
+<tr><td>layer_norm_eps</td><td class="v">1e-05</td><td>用 LayerNorm 而非 RMSNorm</td></tr>
+<tr><td>hidden_act</td><td class="v">"gelu"</td><td>不是 swigluoai</td></tr>
+<tr><td>projection_dim</td><td class="v">6144</td><td>对齐文本 hidden_size</td></tr>
+<tr><td>vision_segment_max_frames</td><td class="v">4</td><td>单段视频最多 4 帧</td></tr>
+</tbody>
+</table>
+
+<h3>9.1 图像 token 压缩</h3>
+<p><code>spatial_merge_size = 2</code>、<code>temporal_patch_size = 2</code>，采用 patch_merge 方式。672 图像分 48×48 个 14×14 patch，经 2×2 合并后变成 24×24 = 576 个视觉 token——正好等于 <code>image_seq_length = 576</code>。</p>
+<p>动态分辨率下最多支持 2016×2016（<code>image_grid_pinpoints</code> 36 个候选中 6 个边长 {336, 672, 1008, 1344, 1680, 2016} 的全组合），此时视觉 token 达 5184 个。这是 1M 上下文能塞进多少张图的关键约束。</p>
+
+<h3>9.2 特殊 token</h3>
+<table>
+<thead><tr><th>用途</th><th class="mono">id</th></tr></thead>
+<tbody>
+<tr><td>图像占位符 image_token_index</td><td class="v">200025</td></tr>
+<tr><td>视频占位符 video_token_index</td><td class="v">200026</td></tr>
+<tr><td>DSpark mask token</td><td class="v">200058</td></tr>
+<tr><td>词表总长</td><td class="v">200064</td></tr>
+</tbody>
+</table>
+<p>200025 之后到 200063 这 39 个位置全是特殊 token 预留区。词表大小 200064 不是 2 的幂，说明它是按 tokenizer 实际词表 + 预留特殊位凑出来的，没有为对齐做填充。</p>
+
+<!-- ========== 10 ========== -->
+<h2 id="s10"><span class="num">10</span>M3 → M3.1 逐项 diff</h2>
+
+<figure>
+<svg viewBox="0 0 680 540" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>M3 到 M3.1 diff</title>
+<rect x="44" y="44" width="96" height="36" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="92" y="62" text-anchor="middle" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="12" font-weight="500">维度</text>
+<rect x="152" y="44" width="228" height="36" rx="8" fill="#D3D1C7" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="266" y="62" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="13" font-weight="500">MiniMax M3</text>
+<rect x="392" y="44" width="244" height="36" rx="8" fill="#9FE1CB" stroke="#1D9E75" stroke-width="0.5"/>
+<text x="514" y="62" text-anchor="middle" dominant-baseline="central" fill="#04342C" font-family="sans-serif" font-size="13" font-weight="500">MiniMax M3.1 Flash</text>
+
+<rect x="44" y="92" width="96" height="62" rx="8" fill="none" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="92" y="117" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="12" font-weight="500">注意力</text>
+<text x="92" y="135" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">MSA 覆盖</text>
+<rect x="152" y="92" width="228" height="62" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="115" dominant-baseline="central" fill="#444441" font-family="sans-serif" font-size="12">前 3 层全注意力 GQA</text>
+<text x="170" y="133" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="11">其余 57 层 MSA</text>
+<rect x="392" y="92" width="244" height="62" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="410" y="115" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="12" font-weight="500">全 60 层 MSA</text>
+<text x="410" y="133" dominant-baseline="central" fill="#0F6E56" font-family="sans-serif" font-size="11">3 层兜底一并换掉</text>
+
+<rect x="44" y="166" width="96" height="62" rx="8" fill="none" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="92" y="191" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="12" font-weight="500">投机解码</text>
+<text x="92" y="209" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">草稿端</text>
+<rect x="152" y="166" width="228" height="62" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="189" dominant-baseline="central" fill="#444441" font-family="sans-serif" font-size="12">EAGLE 式 MTP</text>
+<text x="170" y="207" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="11">草稿不随权重发布</text>
+<rect x="392" y="166" width="244" height="62" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="410" y="189" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="12" font-weight="500">DSpark 草稿头随权重发布</text>
+<text x="410" y="207" dominant-baseline="central" fill="#0F6E56" font-family="sans-serif" font-size="11">1.96B · 2.3 GB · 独立目录</text>
+
+<rect x="44" y="240" width="96" height="62" rx="8" fill="none" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="92" y="265" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="12" font-weight="500">量化</text>
+<text x="92" y="283" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">权重体积</text>
+<rect x="152" y="240" width="228" height="62" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="263" dominant-baseline="central" fill="#444441" font-family="sans-serif" font-size="12">MXFP8，无量化训练</text>
+<text x="170" y="281" dominant-baseline="central" fill="#5F5E5A" font-family="monospace" font-size="11">451.5 GB</text>
+<rect x="392" y="240" width="244" height="62" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="410" y="263" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="12" font-weight="500">QAT：专家 NVFP4 + 稠密 MXFP8</text>
+<text x="410" y="281" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="11">250.1 GB　−44.6%</text>
+
+<rect x="44" y="314" width="96" height="62" rx="8" fill="none" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="92" y="339" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="12" font-weight="500">KV cache</text>
+<text x="92" y="357" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">每 token</text>
+<rect x="152" y="314" width="228" height="62" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="337" dominant-baseline="central" fill="#444441" font-family="monospace" font-size="12">61,440 B</text>
+<text x="170" y="355" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="11">FP8 KV cache</text>
+<rect x="392" y="314" width="244" height="62" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="410" y="337" dominant-baseline="central" fill="#085041" font-family="monospace" font-size="12">34,560 B</text>
+<text x="410" y="355" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="11">NVFP4　−43.75%</text>
+
+<rect x="44" y="388" width="96" height="62" rx="8" fill="none" stroke="#D3D1C7" stroke-width="0.5"/>
+<text x="92" y="413" text-anchor="middle" dominant-baseline="central" fill="#2C2C2A" font-family="sans-serif" font-size="12" font-weight="500">并发</text>
+<text x="92" y="431" text-anchor="middle" dominant-baseline="central" fill="#888780" font-family="sans-serif" font-size="11">4×B300 256K</text>
+<rect x="152" y="388" width="228" height="62" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5"/>
+<text x="170" y="411" dominant-baseline="central" fill="#444441" font-family="sans-serif" font-size="12">28 条并发序列</text>
+<text x="170" y="429" dominant-baseline="central" fill="#5F5E5A" font-family="sans-serif" font-size="11">权重与 KV 挤占显存</text>
+<rect x="392" y="388" width="244" height="62" rx="8" fill="#E1F5EE" stroke="#5DCAA5" stroke-width="0.5"/>
+<text x="410" y="411" dominant-baseline="central" fill="#085041" font-family="sans-serif" font-size="12" font-weight="500">76 条并发序列</text>
+<text x="410" y="429" dominant-baseline="central" fill="#0F6E56" font-family="monospace" font-size="11">×2.7　同硬件同长度</text>
+
+<rect x="44" y="468" width="592" height="52" rx="8" fill="#EEEDFE" stroke="#AFA9EC" stroke-width="0.5"/>
+<text x="62" y="486" dominant-baseline="central" fill="#3C3489" font-family="sans-serif" font-size="12">完全未变：60 层 / hidden 6144 / 前 3 层稠密 FFN / 128 专家 top-4 + 1 共享 / 部分 RoPE</text>
+<text x="62" y="504" dominant-baseline="central" fill="#534AB7" font-family="sans-serif" font-size="12">1M 上下文 / 词表 200064 / 文本图像视频进、文本出 / head_dim 128 / GQA 16:1</text>
+</svg>
+<figcaption>图 6　五项变化，其余全部继承。M3.1 是效率改造，不是结构重设计。</figcaption>
+</figure>
+
+<h3>10.1 三条改动的因果链</h3>
+<table>
+<thead><tr><th>改动</th><th>直接效果</th><th>二阶效果</th></tr></thead>
+<tbody>
+<tr><td>MSA 覆盖到 60 层</td><td>去掉混合执行路径</td><td>kernel 统一，显存布局可预测；但浅层失去全注意力兜底</td></tr>
+<tr><td>QAT + NVFP4 专家</td><td>权重从 451.5 → 250.1 GB</td><td>单卡能放的 KV 变多 → 并发 28 → 76；推理成本下降主要来自这里</td></tr>
+<tr><td>DSpark 替换 MTP</td><td>草稿头可挂载，接受长度 3.97</td><td>输出侧吞吐提升，但对 prefill 无影响</td></tr>
+</tbody>
+</table>
+
+<div class="callout">
+<span class="lab">一句话</span>
+<p>M3.1 省的是<strong>每 token 的搬运字节数</strong>，不是每 token 的思考量。所以它在 agentic 长任务（长上下文 + 长输出）上收益最大，在需要极深单步推理的场景里，反而可能因为专家权重被压到 4bit 而输给 M3 全精度版本。</p>
+</div>
+
+<!-- ========== 11 ========== -->
+<h2 id="s11"><span class="num">11</span>部署要点与坑</h2>
+
+<h3>11.1 硬件适配矩阵</h3>
+<table>
+<thead><tr><th>硬件</th><th>MoE 路径</th><th>可用能力</th></tr></thead>
+<tbody>
+<tr><td>B200 / B300 / GB200 / GB300</td><td class="v">NVFP4 原生</td><td>全功能：1M 上下文、视频输入、DSpark</td></tr>
+<tr><td>AMD MI350X / MI355X</td><td class="v">MXFP8 MoE</td><td>全功能，ROCm 7.2.3</td></tr>
+<tr><td>H100 / H200 (Hopper)</td><td class="v">Marlin MoE（回退）</td><td>8 卡起，长度限 262,144，FP8 KV，视频与 DSpark 均关闭</td></tr>
+<tr><td>国产卡（昇腾/海光等）</td><td class="v">FlagOS 适配</td><td>9 类芯片已适配，能力视具体后端</td></tr>
+</tbody>
+</table>
+
+<h3>11.2 五个容易踩的坑</h3>
+<ol>
+<li><strong>block-size 必须是 128</strong>。这是 MSA 稀疏块与 KV cache 物理块的对齐要求，改任何别的值都会让选择矩阵和显存错位。</li>
+<li><strong>tensor-parallel 建议 4</strong>。4 个 KV 头正好能被 4 整除；上到 8 卡时 KV 头要复制，收益不线性。</li>
+<li><strong>dspark block size 写 7 不是 8</strong>。<code>dspark/config.json</code> 里 <code>dspark_block_size = 7</code>，部分博客写 8 是看了 SPEED-Bench 的评测设置，别混用。</li>
+<li><strong>Hopper 上没有 DSpark</strong>。官方 recipe 明确关闭，跑起来会静默退化成普通解码，速度差一大截但不会报错。</li>
+<li><strong>不要指望 PTQ 版本等价</strong>。官方权重本身是 QAT 产物，第三方再压到 3bit/2bit（如 Unsloth 的 GGUF）会有额外掉点，README 主动提示了这点。</li>
+</ol>
+
+<h3>11.3 推荐的推理参数</h3>
+<pre>temperature = 1.0
+top_p = 0.95
+reasoning_effort ∈ {low, medium, high, xhigh, max}</pre>
+<p>五档 reasoning effort 通过 chat template 注入，是 M3.1 少见的「显式成本旋钮」。Automation-Bench 上从 low 的 52.8% 一路爬到 max 的 62.8%，曲线贴着成本-性能前沿——这说明它不是简单地「多想就更好」，而是每一档都有明确的性价比拐点。</p>
+
+<!-- ========== 12 ========== -->
+<h2 id="s12"><span class="num">12</span>数据存疑处</h2>
+
+<p>公开资料里有几处数字对不上，我把它们列出来，避免文档里留下错误。</p>
+
+<table>
+<thead><tr><th>项目</th><th>冲突</th><th>采信</th></tr></thead>
+<tbody>
+<tr><td>dspark block size</td><td>config 写 7，部分博客写 8</td><td>7（配置文件为准）；8 是 SPEED-Bench 评测设置</td></tr>
+<tr><td>参数量</td><td>模型卡 428B，Hub 元数据 220B</td><td>428B；220B 是 4bit 打包导致的计数偏差</td></tr>
+<tr><td>Automation-Bench</td><td>模型卡 62.8，发布图 62.2，正文说 62%</td><td>62.8；其余为四舍五入与图片版本差异</td></tr>
+<tr><td>Terminal-Bench 4.0</td><td>官方 38.1%，第三方复现约 26%</td><td>两个都记；差异源于 harness 与输出 token 预算</td></tr>
+<tr><td>shard 数量</td><td>页面写 48，API 枚举到 49 个 .safetensors</td><td>两个都对：主干 48 片（<code>model-00001-of-00048</code>）+ DSpark 目录 1 片，索引另为 2 个 .json</td></tr>
+<tr><td>prefill 提速</td><td>9× / 9.7× / 14.2×</td><td>9.7×（Modular 官方口径）；14.2× 是纯算子对比</td></tr>
+</tbody>
+</table>
+
+<div class="callout warn">
+<span class="lab">关于 Terminal-Bench 的分歧</span>
+<p>外部复现只有 26%，官方 38.1%，差距不小。资料显示 M3.1 在某些专业任务上输出的 token 数远多于 M3——换句话说，高分部分来自「愿意多说」，而不是「单步更强」。评估 agentic 模型时这个区别很关键，如果你的场景对输出长度敏感，实际体验会和榜面不一致。</p>
+</div>
+
+<h3>12.1 未公开的信息</h3>
+<ul>
+<li>训练数据规模与构成（只提到预览阶段匿名处理了 200 万亿 token）</li>
+<li>MSA 去掉前 3 层全注意力的消融数据</li>
+<li>DSpark 相对 M3 MTP 的具体加速比（官方只给了整机速度，没拆草稿头贡献）</li>
+<li>五档 reasoning effort 各自的平均输出 token 数</li>
+<li>长上下文有效长度衰减曲线（1M 是位置上限，实际可用长度依赖显存与配置）</li>
+</ul>
+
+<footer>
+  <p>数据来源：模型仓库 <code>config.json</code> 与 <code>dspark/config.json</code> 原文、MiniMax 模型卡、vLLM 部署 recipe、Modular MSA 算子分析。参数核算部分为按配置推算，与官方 428B / 23B 口径一致（误差 &lt;0.3%）。<br>
+  整理于 2026-11-05。</p>
+  <p style="margin-top:10px;">本文档是 <a href="/LLM-blog/blog/fa10-minimax-m31-flash">fa10 · MiniMax M3.1-Flash</a> 的完整参数附录，比正文更细：12 节 / 6 张图 / 18 张表，含全部 config 字段、逐层张量形状与参数量核算。返回 <a href="/LLM-blog/">大模型技术notes</a>。</p>
+</footer>
+
+</div>
+</body>
+</html>
