@@ -41,7 +41,7 @@ layout: ../../layouts/BlogPost.astro
 
 ---
 
-## 2. 系列地图（13 个系列，截至 2026-10-27）
+## 2. 系列地图（13 个系列，截至 2026-11-17）
 
 站点已按 **5 大类** 重组（首页有「按分类概览」卡片 + 正文分类分隔标题，另有端到端推理全景页做交叉导航）。下表按分类分组。
 
@@ -51,17 +51,17 @@ layout: ../../layouts/BlogPost.astro
 | | `ep` | 推测解码手记 | Speculative Decoding Notes | 8 | ep1–ep8 | `#s-spec` | 本博客起点：draft/verify → DFlash / DSpark / EAGLE-3 / MTP → DFlash 2 |
 | | `op` | 算子讲解手记 | Operator Notes | 3 | op1–op3 | `#s-op` | MLA 算子逐行伪代码、**模型量化谱系总表（qt 系列导读入口）**、**EAGLE QBSA** |
 | | `qt` | 量化手记 | Quantization Notes | 7 | qt1–qt7 | `#s-qt` | **新增（2026-10-27）**：量化基本语言 → RTN/GPTQ（OBS 推导）→ SmoothQuant/AWQ → QuaRot/SpinQuant/DuQuant（W4A4）→ KV Cache 量化与 FP4 → **QAT（STE/PACT/LSQ）** → **量化的三个边界（投机解码/MLA/端侧）** |
-| **二 · 推理系统与工程** | `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 12 | sys1–sys12 | `#s-sys` | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 → DCP / PD 分离 → HiCache L2 昆仑芯调优 → **Mooncake** |
+| **二 · 推理系统与工程** | `sys` | 推理系统基础设施手记 | Inference Systems Infrastructure Notes | 13 | sys1–sys13 | `#s-sys` | NUMA/PCIe/NIC → Ring Attention → 注意力改造 → 蒸馏 → KV Cache 全景与工程实现 → DCP / PD 分离 → HiCache L2 昆仑芯调优 → **Mooncake** → **MoE 专家并行通信与计算（Dispatcher / DeepEP / Grouped GEMM / EPLB）** |
 | | `fw` | vLLM 与 SGLang 框架解码手记 | vLLM & SGLang Serving Notes | 10 | fw1–fw10 | `#s-fw` | 推理引擎原理、前沿对抗、版本演进、选型、Wan2.2 / vLLM-Omni、**DeepInfer 生产级推理栈** |
 | **三 · 多模态与具身** | `vla` | VLA 解码手记 | VLA Notes | 9 | vla1–vla9 | `#s-vla` | 「动手」能力：动作生成 → π 系列 → 国内玩家 → 世界模型 → RT-1 → V-JEPA 2 → Dreamer V3 → Octo |
 | | `mm` | 多模态解码手记 | Multimodal Decoding Notes | 5 | mm1–mm5 | `#s-mm` | 对齐范式 → VLM → 生成模型 → VLA/世界模型 → 高效系统 |
 | | `pp` | 论文科普手记 | Paper Primer Notes | 2 | pp1–pp2 | `#s-pp` | Transformer 精读、Diffusion Policy 精读 |
 | **四 · 训练与智能体** | `rl` | 强化学习训练手记 | RL Training Notes | 1 | rl1– | `#s-rl` | 训练侧：分布式 RL 训练 / PPO·GRPO / RLHF 基础设施 |
 | | `ag` | 智能体手记 | Agent Notes | 1 | ag1– | `#s-ag` | Agent 能力栈、上下文工程、Agentic 负载下的推理重构 |
-| **五 · 时效跟踪** | `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 43 | aihot-YYYYMMDD | `#s-aihot` | 自动聚合（`import.meta.glob`），无需在首页手写注册 |
+| **五 · 时效跟踪** | `aihot` | 每日AI热点 | Daily AI Hotspot Notes | 62 | aihot-YYYYMMDD | `#s-aihot` | 自动聚合（`import.meta.glob`），无需在首页手写注册 |
 | | `tr` | 社区跟踪手记 | Community Tracker Notes | 3 | tr1–tr3 | `#s-tr` | vLLM/SGLang 上游 commit 的时间切片（**停在 tr3 / 08-11**；此后跟踪并入 `aihot`，注意避免同期内容双挂） |
 
-**合计 114 篇**，其中 71 篇为原创双语长文（114 − 43 篇 aihot）；分类篇数：模型与解码算法 28 / 推理系统与工程 22 / 多模态与具身 16 / 训练与智能体 2 / 时效跟踪 46。
+**合计 134 篇**（截至 2026-11-17），其中 72 篇为原创双语长文（134 − 62 篇 aihot）；分类篇数：模型与解码算法 28 / 推理系统与工程 23 / 多模态与具身 16 / 训练与智能体 2 / 时效跟踪 65。
 
 **首页系列顺序（当前，按分类分组）**：`fa → ep → op → qt` ｜ `sys → fw` ｜ `vla → mm → pp` ｜ `rl → ag` ｜ `aihot → tr`
 
@@ -95,6 +95,11 @@ layout: ../../layouts/BlogPost.astro
 ⑤ 想懂「线上服务怎么调优」
    fw10 DeepInfer 四层架构 → sys8 PD 分离实例配比 → sys12 Mooncake → fw7 CUDA Graph → ep 系列选解码加速
    （全景页「调优线上服务」主线就是这条顺序）
+
+⑦ 想懂「MoE 到底怎么跑起来」
+   sys8 五把刀里的 EP → sys13（route → dispatch → Grouped GEMM → combine → EPLB 一条完整流水，
+   dispatch 的变长语义、DeepEP 两种 kernel 的两套 SLA、offsets 接口、moe_lb 怎么读）
+   → fw10 §3 看 Wide-EP 的分阶段配比与 EPLB 实测数据
 
 ⑥ 想懂「量化到底怎么做」（2026-10 新增，qt 系列）
    qt1 量化基本语言（一个反量化公式 + 粒度/对称性/校准三旋钮 + 四路线地图）
@@ -157,9 +162,10 @@ layout: ../../layouts/BlogPost.astro
 **前沿架构（fa9+）**
 - 长上下文推理的稀疏注意力量化对比
 
-**系统（sys12+）**
+**系统（sys14+）**
 - PD 分离在生产环境的实例配比实测
 - DeepInfer 未开源三块（完整 KV 管理 / 3FS、PD 分离、副本负载均衡）的可推断实现
+- MoE 单卡的 dispatch 变长通信实测（normal vs low-latency 两种 kernel 的 TPOT 对比，同硬件同模型）
 
 **框架（fw11+）**
 - DeepInfer 在国产硬件上的落地实测（注意 `DEEPINFER_BATCH_INVARIANT=1` 仅 NVIDIA 支持）
