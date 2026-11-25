@@ -1,6 +1,6 @@
 ---
-title: "Inference Systems Infrastructure Notes (13): MoE Expert Parallelism, Communication and Compute — How Dispatcher, DeepEP, Grouped GEMM and EPLB Form One Pipeline"
-description: "One MoE forward pass in five steps: route, dispatch, Grouped GEMM, combine, weighted reduction. Why the hard part of dispatch is variable length rather than getting data out, why DeepEP ships normal and low-latency kernels for two different SLAs, why the real win of Grouped GEMM is collapsing E tails into one rather than saving kernel launches, and why EPLB can only rebalance by statistics plus moving weights at inference time. Includes a decode step latency ledger and a parameter decision table."
+title: "Inference Systems Infrastructure Notes (13): MoE Expert Parallelism, Communication and Compute — How Dispatcher, DeepEP, Grouped GEMM and EPLB Form One Pipeline, and How MegaMoE Welds It Into a Single Kernel"
+description: "One MoE forward pass in five steps: route, dispatch, Grouped GEMM, combine, weighted reduction. Why the hard part of dispatch is variable length rather than getting data out, why DeepEP ships normal and low-latency kernels for two different SLAs, why the real win of Grouped GEMM is collapsing E tails into one rather than saving kernel launches, and why EPLB can only rebalance by statistics plus moving weights at inference time. Includes a decode step latency ledger and a parameter decision table, plus MegaMoE fusion and wave pipelining: the three classes of cost that fusion removes, why wave scheduling only rearranges time, and how the 6144 FLOPs/Byte hiding threshold falls out of 6hd over 3h, with a clear separation from MagiMoE."
 pubDate: 2026-11-17
 series: Inference Systems Infrastructure Notes
 lang: en
@@ -78,7 +78,7 @@ Same name, unrelated mechanisms, and the only thing they share is the word. Do n
 <line x1="554" y1="74" x2="568" y2="74" stroke="#6b7280" stroke-width="1" marker-end="url(#m1)"/>
 
 <rect x="150" y="112" width="404" height="24" rx="4" fill="#fff5f5" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="3 3"/>
-<text x="352" y="128" font-size="10" fill="#b91c1c" text-anchor="middle">Pure communication, hideable only with chunk-level pipelining</text>
+<text x="352" y="128" font-size="10" fill="#b91c1c" text-anchor="middle">Pure communication, hideable only with chunk-level pipelining (see section 6)</text>
 
 <rect x="30" y="164" width="622" height="52" rx="6" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
 <text x="46" y="182" font-size="11" fill="#1a1a1a" font-weight="600">Three things dispatch quietly does along the way (easy to miss)</text>
@@ -211,7 +211,7 @@ The price is carrying scales, and they must be **per token**, otherwise accuracy
 
 ### 4.1 What the naive approach gets wrong
 
-The MoE FFN is fundamentally E independent small matmuls: expert e multiplies its own $M_e$ tokens by its own weight $W_e$. The most direct implementation is a loop:
+The MoE FFN is fundamentally E independent small matmuls: expert e multiplies its own `M_e` tokens by its own weight `W_e`. The most direct implementation is a loop:
 
 ```python
 for e in range(num_experts):
@@ -361,12 +361,156 @@ Combine sends expert outputs back along the reverse path, then each GPU performs
 | Where weights apply | Nowhere (routing only picks addresses) | **Mandatory** (sum gate_i * y_i) |
 | Hideable | Yes (send early, wait when needed) | **Mostly not**: must be complete before the next layer |
 | Fusable | - | Can fuse with the next layer reduce-scatter |
+| Fusable into one kernel | Yes (fuses with dispatch) | Yes, and this is exactly the premise of section 6 |
 
 That last row is a practical optimization. If a TP all-reduce follows (the FFN output must be reduced across TP), the combine all-to-all runs in the same direction and the two can fuse into one collective, saving a round trip. Done separately, it is two full round trips.
 
-## 6. EPLB: training uses loss, inference moves weights
+## 6. Fusion: welding five steps into one kernel, MegaMoE and wave pipelining
 
-### 6.1 Why inference has no loss to lean on
+The previous five sections split the pipeline apart because the components have different semantics. But **on a GPU, a semantic boundary is itself a source of waste**: every boundary costs a kernel launch, and every intermediate tensor gets written to HBM and read back. SwiGLU is the worst case, an elementwise multiply that leaves the compute units nearly idle while pushing the entire activation out to memory and pulling it back in.
+
+**MegaMoE**, which DeepSeek open-sourced inside DeepGEMM in April 2026 (later revisions call it MegaMoE squared), collapses those five steps into a **single kernel invocation**: dispatch, Linear-1, SwiGLU, Linear-2 and combine all run without touching HBM, and intermediate tensors live only in a GPU scratch buffer.
+
+Pin the scope first: **MegaMoE is an execution structure, not a model structure.** It does not change which tokens go to which expert, which is routing's job. It changes how those experts run on the GPU. So it does not replace MoE, it sits one layer below it.
+
+### 6.1 Fusion removes three classes of cost, not one launch
+
+| Cost | What the naive path pays | After fusion |
+|---|---|---|
+| CPU-side launches and syncs | E experts times 5 segments, one launch and one sync each | 1 |
+| Intermediate tensors to HBM | Packed token buffer and the SwiGLU activation, written out and read back | Scratch buffer only, never HBM |
+| GPU-to-CPU round trips | Every segment returns to the CPU before the next is issued | Driven entirely on the GPU |
+
+The third row matters most. In a conventional implementation the CPU issues every kernel, so once the expert count grows, **launch overhead and synchronization latency alone eat a visible slice of the timeline**. That is why section 4.1's claim about turning E launches into 1 matters more at the systems layer than at the algorithms layer.
+
+The site's `aihot-20260821` records the persistent form on SM100 and corroborates exactly this: the shared L1 segment, the routed dispatch plus MMA, the shared L2 segment and the FP32 accumulation are all scheduled **inside one persistent kernel**, **writing the BF16 output exactly once**. Note that shared experts and routed experts fuse together there too, so the fusion boundary is not one MoE layer but the entire FFN's work.
+
+### 6.2 Wave scheduling rearranges time, it does not add bandwidth
+
+Fusion only welds the seams shut. The actual speedup comes from the second move: **once dispatch, compute and combine live in the same kernel, the experts can be split into waves so different waves sit at different stages.**
+
+The DeepSeek-V4 technical report puts it this way: split the experts into waves, each holding a small portion of them, and as soon as every expert within a wave has finished its communication, that wave starts computing immediately without waiting for the others. In steady state three things proceed concurrently: the current wave computes, the next wave transmits, and completed waves send results back.
+
+<div class="fig">
+<svg viewBox="0 0 680 322" width="100%" font-size="13" font-weight="400" role="img" aria-label="Execution timeline of plain MoE versus MegaMoE with wave pipelining">
+<title>Figure 4: five serial operators versus wave pipelining after fusion into one kernel</title>
+
+<text x="40" y="24" font-size="11" fill="#b91c1c" font-weight="600">Naive: five serial segments, red seams are kernel boundaries plus syncs</text>
+
+<rect x="44" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="90" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">dispatch</text>
+<rect x="161" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="207" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">Linear-1</text>
+<rect x="278" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="324" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">SwiGLU</text>
+<rect x="395" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="441" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">Linear-2</text>
+<rect x="512" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="558" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">combine</text>
+
+<rect x="142" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="259" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="376" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="493" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+
+<text x="40" y="88" font-size="10" fill="#6b7280">A red seam means compute cannot start until communication lands, and the result lands back on the CPU</text>
+
+<text x="40" y="118" font-size="11" fill="#047857" font-weight="600">MegaMoE: one kernel plus wave pipelining, three streams in steady state</text>
+
+<rect x="36" y="130" width="608" height="132" rx="6" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+
+<line x1="310" y1="142" x2="310" y2="250" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3 3"/>
+<line x1="384" y1="142" x2="384" y2="250" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3 3"/>
+
+<text x="48" y="164" font-size="9" fill="#6b7280">wave 0</text>
+<rect x="108" y="146" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="154" y="163" font-size="10" fill="#1d4ed8" text-anchor="middle">send in</text>
+<rect x="200" y="146" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="255" y="163" font-size="10" fill="#047857" text-anchor="middle">compute</text>
+<rect x="310" y="146" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="356" y="163" font-size="10" fill="#1d4ed8" text-anchor="middle">send out</text>
+
+<text x="48" y="200" font-size="9" fill="#6b7280">wave 1</text>
+<rect x="200" y="182" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="246" y="199" font-size="10" fill="#1d4ed8" text-anchor="middle">send in</text>
+<rect x="292" y="182" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="347" y="199" font-size="10" fill="#047857" text-anchor="middle">compute</text>
+<rect x="402" y="182" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="448" y="199" font-size="10" fill="#1d4ed8" text-anchor="middle">send out</text>
+
+<text x="48" y="236" font-size="9" fill="#6b7280">wave 2</text>
+<rect x="292" y="218" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="338" y="235" font-size="10" fill="#1d4ed8" text-anchor="middle">send in</text>
+<rect x="384" y="218" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="439" y="235" font-size="10" fill="#047857" text-anchor="middle">compute</text>
+<rect x="494" y="218" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="540" y="235" font-size="10" fill="#1d4ed8" text-anchor="middle">send out</text>
+
+<text x="347" y="280" font-size="10" fill="#1a1a1a" text-anchor="middle">Inside the dashed window: wave 0 sends out, wave 1 computes, wave 2 sends in</text>
+
+<rect x="60" y="296" width="14" height="10" rx="2" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="82" y="305" font-size="10" fill="#6b7280">communication (send in and out)</text>
+<rect x="290" y="296" width="14" height="10" rx="2" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="312" y="305" font-size="10" fill="#6b7280">expert compute</text>
+<rect x="440" y="296" width="14" height="10" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<text x="462" y="305" font-size="10" fill="#6b7280">sync seam, welded shut</text>
+</svg>
+</div>
+
+How to cut the waves is a real trade-off. **Too small** and the per-wave fixed overhead never amortizes, so it gets slower. **Too large** and it degenerates into a batch-wide sync, which is the same as not cutting at all. The tuning logic is therefore identical to the normal versus low-latency split in section 3.2: **is your bottleneck bandwidth or latency.**
+
+One thing has to be said plainly here, or the conclusion comes out wrong: **wave scheduling rearranges time, it does not reduce traffic.** Not a single token goes unsent, and the `O(N·k·h)` volume is untouched. It converts waiting into overlap. It does not convert more into less.
+
+### 6.3 Overlap has a hard precondition: the 6144 line
+
+If communication is intrinsically more expensive than compute, no amount of wave cutting hides it. So whether overlap works is not an engineering question at all, it is **an inequality you can compute up front**.
+
+For one token-expert pair, counting the three SwiGLU projections (gate, up, down) at `2hd` each:
+
+- **Compute** `C = 6hd` FLOPs
+- **Traffic** `B = h + 2h = 3h` bytes (dispatch sends `h` in FP8, combine returns `2h` in BF16)
+
+Requiring compute time to be at least communication time, that is `C/B ≤ V_comp / V_comm`, the `h` cancels:
+
+```text
+C / B = 6hd / 3h = 2d        units: FLOPs / Byte
+```
+
+DeepSeek-V4-Pro uses `d = 3072`, so the threshold is **6144 FLOPs/Byte**.
+
+What makes this line useful is that it is a **hardware co-design criterion rather than one vendor's trick**: if a chip's compute-to-bandwidth ratio sits below it, no scheduler saves you, and above it, overlap pays. That also explains why the same work validates on both NVIDIA GPUs and Huawei Ascend NPUs, because the criterion is portable.
+
+| Case | Consequence |
+|---|---|
+| `d` larger (wider experts) | Threshold rises, communication is easier to hide |
+| `d` smaller (narrow experts, such as a 3072-expert design) | Threshold falls, narrow experts are intrinsically harder to overlap, so **their bottleneck is per-GPU scheduling overhead, not cross-GPU bandwidth** |
+| Bandwidth doubles | Effective threshold doubles, but the traffic does not change |
+| Traffic itself grows (BF16 dispatch, say) | `B` rises to `4h`, the threshold drops to `1.5d`, a third instantly gone |
+
+### 6.4 What it does not solve
+
+Three limits worth remembering, or it gets treated as a cure-all:
+
+1. **Forward pass only.** MegaMoE in DeepGEMM is inference-oriented; training needs an overlapping backward path written for it. Prime Intellect added one and reports 3.11x at the kernel level but 1.34x end to end, and that three-fold gap is the point: the end-to-end bottleneck is not this kernel.
+2. **Power budget bound.** Pushing communication under compute means the compute units run close to continuously saturated, so **the power wall can arrive before the bandwidth wall**. Finer waves are therefore not automatically better.
+3. **Neither routing skew nor traffic volume changes.** When one expert absorbs 40 percent of the tokens, fusion and waves have nothing to offer; that is section 7 territory. **It optimizes waiting, not work**, the same argument as misreading two in section 10.
+
+### 6.5 Not to be confused with MagiMoE
+
+The two names differ by one letter and solve different problems:
+
+| | **MegaMoE** (DeepSeek / DeepGEMM) | **MagiMoE** (Sand.ai / MAGI-2) |
+|---|---|---|
+| Setting | **Cross-GPU EP**, experts spread over many GPUs | **Within one GPU**, a very large number of narrow experts (3072, say) |
+| Dominant bottleneck | Overlapping cross-GPU communication with compute in time | Launch and padding waste from looping over experts |
+| Mechanism | Five-step fusion into one kernel plus wave scheduling | Routing, Top-K, compact layout, grouped FFN, SwiGLU and combine fused |
+| View of communication | **Rearrange time** to hide it | **Decouple structure** to shrink it (fixed-order exchange first, `O(N·H)` independent of top-k) |
+
+That last row is the real conceptual divide: **MegaMoE accepts that the traffic exists and works out how to hide it, while MAGI-2's Multi-Head Latent MoE decouples traffic from routing so it no longer grows with top-k.** One is an engineering problem, the other a structural one. They stack, but they do not substitute for each other.
+
+## 7. EPLB: training uses loss, inference moves weights
+
+### 7.1 Why inference has no loss to lean on
 
 Training MoE has auxiliary losses or bias terms that push routing toward balance through gradients. **At inference there is no gradient, no loss, and no permission to change the model.** Routing is a fixed function of the weights, and a hot expert stays hot.
 
@@ -377,7 +521,7 @@ That leaves two paths:
 
 EPLB takes path two. It complements aux-loss-free bias rather than replacing it: one governs training, the other governs deployment.
 
-### 6.2 How to read moe_lb
+### 7.2 How to read moe_lb
 
 Define the metric first:
 
@@ -392,11 +536,11 @@ That looks small but matters enormously at EP64, because every step waits for th
 
 `fw10` records DeepInfer measurements: 1.074 and 1.045 in prefill, 1.090 in decode.
 
-### 6.3 Redundant replicas plus minimax greedy placement
+### 7.3 Redundant replicas plus minimax greedy placement
 
 <div class="fig">
 <svg viewBox="0 0 680 330" width="100%" font-size="13" font-weight="400" role="img" aria-label="EPLB redundant expert replication and packing">
-<title>Figure 4: hot experts are replicated, then packed onto different GPUs</title>
+<title>Figure 5: hot experts are replicated, then packed onto different GPUs</title>
 
 <text x="40" y="26" font-size="11" fill="#b91c1c" font-weight="600">Before: e7 takes 40 percent of tokens while other experts idle</text>
 
@@ -460,7 +604,7 @@ The algorithm is not complicated. Score each expert from historical `tokens_per_
 
 One easy mistake: **minimax greedy is not the same as replicating the hottest expert.** If the hottest expert is still the hottest after one replica, a second replica buys little, whereas replicating the second-hottest may reduce the new maximum more. Choose based on **the new max after replication**, not the current value.
 
-### 6.4 Why the rebalance period is so long
+### 7.4 Why the rebalance period is so long
 
 Moving experts costs real money. One expert weight (say hidden 2048 by intermediate 512 at two bytes) is megabytes; rebalancing hundreds of them is gigabytes of GPU-to-GPU traffic. While the move is in flight those experts are unavailable.
 
@@ -477,7 +621,7 @@ Three different rationales:
 - **Statistics window**: long enough to filter single-step noise, short enough to track real distribution shifts. Prefill uses 100 steps (many tokens per step, plenty of samples); decode uses 1000 (few tokens per step, so accumulate more).
 - **Rebalance period**: far longer than the window because moving is expensive. The 1000 to 10000 ratio encodes the principle: **statistics are cheap and moves are expensive, so observe often and act rarely**.
 
-### 6.5 That 0.0001 nudge
+### 7.5 That 0.0001 nudge
 
 A detail worth stealing: EPLB adds a tiny offset when scoring experts.
 
@@ -491,7 +635,7 @@ What that 0.0001 buys is **reproducible scheduling**. In a cluster of 384 expert
 
 **Trading a sliver of optimality for determinism is worth far more than one percent throughput in a production system.**
 
-### 6.6 The costs: fault domain and memory
+### 7.6 The costs: fault domain and memory
 
 EPLB is not free.
 
@@ -499,7 +643,7 @@ EPLB is not free.
 - **Fault domain**: EP64 means 64 GPUs share a **single communication domain**, so one failed GPU takes the whole instance down. Recovery is not a fast restart but a restart that **re-derives EP size from all currently healthy GPUs** and continues degraded on what remains.
 - **So the safety net for Wide-EP is spare capacity, not recovery speed.** Capacity planning must account for this.
 
-## 7. Putting it together: the latency ledger of one decode step
+## 8. Putting it together: the latency ledger of one decode step
 
 Only on a shared timeline do the relative weights become visible.
 
@@ -508,7 +652,7 @@ Only on a shared timeline do the relative weights become visible.
 | Route (gate plus top-k) | Local compute | No | Small but nonzero (every step) |
 | Dispatch | **Pure communication** | Partly (hook: send early, wait late) | **High**: paid every step, added straight to TPOT |
 | Grouped GEMM | Compute | - | Medium (tiny M in decode, memory bound) |
-| Combine | **Pure communication** | Mostly not | **High**: complete before the next layer |
+| Combine | **Pure communication** | Mostly not (**hideable once fused and waved, see section 6**) | **High**: complete before the next layer |
 | Weighted reduction | Local compute | No | Small |
 
 Two conclusions:
@@ -516,7 +660,7 @@ Two conclusions:
 1. **In decode, communication consumes a much larger share than in prefill.** Prefill processes thousands of tokens at once, so Grouped GEMM dominates; decode processes hundreds, so the fixed cost of two dispatch-combine exchanges becomes significant. **That is the entire reason DeepEP ships a low-latency mode.**
 2. **EPLB does not sit on this timeline.** It operates across many steps, and its benefit shows up in **accumulated throughput**, not single-step latency. So: **tune dispatch and combine for TTFT and TPOT, tune EPLB and EP size for cluster throughput.** These are two different sets of knobs; mixing them makes the changes cancel out.
 
-## 8. Parameter decision table: how to set the four knobs
+## 9. Parameter decision table: how to set the four knobs
 
 | Knob | Small value | Large value | How to decide |
 |---|---|---|---|
@@ -532,7 +676,7 @@ On the first row, the numbers from `fw10` bear repeating (64xSM100, fixed three 
 
 **Wide-EP buys depth in the interactive regime, not peak throughput.** This is the easiest thing to miss in capacity planning: compute only "throughput at full batch" and you will conclude, wrongly, that a larger EP does not help.
 
-## 9. Three common misreadings
+## 10. Three common misreadings
 
 **Misreading one: Grouped GEMM is only about saving launches.**
 Saving launches is a side benefit. The real win is collapsing E independent tail effects into one, and in regimes with hundreds of experts holding few tokens each, that is an order of magnitude bigger. Conversely, **with few experts (say 8) that are each well filled, Grouped GEMM buys little**, so do not expect it to rescue you.
@@ -543,7 +687,7 @@ EPLB changes the **physical placement** of experts, not the routing outcome. If 
 **Misreading three: dispatch is bandwidth bound.**
 In prefill that is true, since the payload is large. **In decode the bottleneck is latency**: the per-step payload is too small to fill bandwidth, and what eats time is the fixed cost of the round trip and the synchronization points. So optimizing dispatch in decode means **lowering latency and footprint** (fixed buffers, fewer SMs, hook overlap), not raising bandwidth utilization.
 
-## 10. Ties to other posts on this site
+## 11. Ties to other posts on this site
 
 - **`sys8` (parallel strategy landscape)** gives EP a qualitative entry in the five-knife table: all-to-all, traffic scaling with top-k and batch, needs expert load balancing. This post expands each of those three clauses into a mechanism: why all-to-all must be variable length, how the traffic scales, and how balancing works.
 - **`sys12` (Mooncake)** covers request-level routing and KV movement across instances. This post covers **token-level routing inside a layer**. Two different granularities of dispatch; do not conflate them.
@@ -552,6 +696,7 @@ In prefill that is true, since the payload is large. **In decode the bottleneck 
 - **`op1` (MLA operator)** takes the single-GPU operator view while this post takes the cross-GPU data flow view. MLA compresses KV; Grouped GEMM optimizes expert compute. Both aim to read and write less data per step, one in attention and one in the FFN.
 - **`fa4` (DeepSeek V4) and `fa10` (MiniMax M3.1 Flash)** describe expert counts and sparsity (configurations such as 384 experts with top-8). **The model expert count directly sets EP communication complexity:** more experts means fewer per GPU and more scattered dispatch destinations. Their model view and this systems view are two sides of one coin.
 - **`aihot-20260925` (MegaBlocks and grouped GEMM)** is the only other place on this site mentioning grouped GEMM, and only in passing. This post covers why it matters, what the interface looks like, and how it relates to capacity factor.
+- **`aihot-20260821` (the DeepGEMM SM100 MegaMoE kernel) and `fa4` (DeepSeek V4)** only report MegaMoE conclusions, one recording the persistent fused kernel shape and the other the 1.5 to 1.73x speedup. **Section 6 here is the first place on this site that opens it up**: which three classes of cost fusion removes, why waves can overlap, how the 6144 FLOPs/Byte threshold is derived, and why it is not the same thing as MagiMoE.
 
 ---
 
@@ -570,3 +715,4 @@ In prefill that is true, since the payload is large. **In decode the bottleneck 
 - [(10) DeepInfer dissected](/en/blog/fw10-deepinfer): source of the Wide-EP ratios and EPLB measurements
 - [(7) CUDA Graph](/en/blog/fw7-cuda-graph): where the other dispatcher lives
 - [(1) MLA operator](/en/blog/op1-mla-operator): the single-GPU operator counterpoint
+- [(4) DeepSeek V4 architecture](/en/blog/fa4-deepseek-v4): where MegaMoE first appears on the model side

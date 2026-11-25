@@ -47,7 +47,7 @@ The three mix into a layered "precise near, compressed far" structure.
 - **Muon optimizer** replaces AdamW: for orthogonal / moment matrices Muon (momentum + orthogonalization) saves memory and stabilizes convergence — the key to V4's cheaper training.
 - **OPD (On-Policy Distillation)**: the main model distills "domain-expert" small models online, compressing specialized capability into the unified model and avoiding offline-distillation distribution shift.
 - **FP8 training / FP4 expert params**: MoE expert weights in FP4, further cutting training/storage cost.
-- **MegaMoE EP communication**: expert-parallel comm optimization, 1.5–1.73× faster; plus **disk KV cache**, TileLang DSL, Ascend NPU adaptation.
+- **MegaMoE EP communication**: expert-parallel comm optimization, 1.5–1.73× faster (**why it is fast, wave scheduling and the 6144 FLOPs/Byte threshold: see `sys13` section 6**); plus **disk KV cache**, TileLang DSL, Ascend NPU adaptation.
 
 ## 3. Two Variants and Pricing
 

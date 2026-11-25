@@ -1,6 +1,6 @@
 ---
-title: '推理系统基础设施手记（十三）：MoE 专家并行的通信与计算——Dispatcher、DeepEP、Grouped GEMM、EPLB 怎么串成一条流水'
-description: '把 MoE 推理的一次前向拆成五步：路由 → dispatch → Grouped GEMM → combine → 加权还原，看清四个组件各自解决哪一段问题。为什么 dispatch 的难点是「变长」而不是「发出去」、DeepEP 的 normal 与 low-latency 两种模式对应两种 SLA、Grouped GEMM 真正的收益不是省 launch 而是把 E 个尾巴摊成一个、EPLB 为什么只能在推理侧靠统计加搬运。附 decode 一步的时间账本与参数决策表。'
+title: '推理系统基础设施手记（十三）：MoE 专家并行的通信与计算——Dispatcher、DeepEP、Grouped GEMM、EPLB 怎么串成一条流水，以及 MegaMoE 怎么把它焊进一个内核'
+description: '把 MoE 推理的一次前向拆成五步：路由 → dispatch → Grouped GEMM → combine → 加权还原，看清四个组件各自解决哪一段问题。为什么 dispatch 的难点是「变长」而不是「发出去」、DeepEP 的 normal 与 low-latency 两种模式对应两种 SLA、Grouped GEMM 真正的收益不是省 launch 而是把 E 个尾巴摊成一个、EPLB 为什么只能在推理侧靠统计加搬运。附 decode 一步的时间账本与参数决策表。另补 MegaMoE 的五步融合与波次流水：融合消掉哪三类代价、为什么波次调度只是重排时间、以及 6144 FLOPs/Byte 这条「通信能否被藏住」的阈值怎么从 6hd/3h 推出来，并辨清它与 MagiMoE 不是一回事。'
 pubDate: 2026-11-17
 series: 推理系统基础设施手记
 lang: zh
@@ -78,7 +78,7 @@ MoE 推理的一条数据流是固定的：**路由决定 token 去哪 → dispa
 <line x1="554" y1="74" x2="568" y2="74" stroke="#6b7280" stroke-width="1" marker-end="url(#m1)"/>
 
 <rect x="150" y="112" width="404" height="24" rx="4" fill="#fff5f5" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="3 3"/>
-<text x="352" y="128" font-size="10" fill="#b91c1c" text-anchor="middle">这两段是纯通信，无法被计算掩盖（除非做 chunk 级流水）</text>
+<text x="352" y="128" font-size="10" fill="#b91c1c" text-anchor="middle">这两段是纯通信，无法被计算掩盖（除非做 chunk 级流水，见 §6）</text>
 
 <rect x="30" y="164" width="622" height="52" rx="6" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
 <text x="46" y="182" font-size="11" fill="#1a1a1a" font-weight="600">被 dispatch 顺手完成的三件事（容易被忽略）</text>
@@ -211,7 +211,7 @@ DeepEP 的设计基本就是上面这个结论的工程化。它提供两类 ker
 
 ### 4.1 朴素做法错在哪
 
-MoE 层的 FFN 本质是 E 个独立的小矩阵乘：专家 e 拿自己的 $M_e$ 个 token，乘自己的权重 $W_e$。最直白的实现就是循环：
+MoE 层的 FFN 本质是 E 个独立的小矩阵乘：专家 e 拿自己的 `M_e` 个 token，乘自己的权重 `W_e`。最直白的实现就是循环：
 
 ```python
 for e in range(num_experts):
@@ -360,13 +360,157 @@ combine 把各专家的输出按原路发回，然后每张卡按 top-k 的 gate
 | 时机 | Grouped GEMM **之前** | Grouped GEMM **之后** |
 | 权重用在哪 | 不用（路由结果只决定地址） | **必须用**（Σ gateᵢ·yᵢ） |
 | 能否被掩盖 | 可以（先发，等需要用之前再等） | **基本不能**——收齐才能进下一层 |
+| 融合后能否丢进同一个内核 | 可以（与 dispatch 一起融合） | 可以——这正是 §6 的前提 |
 | 能否合并 | — | 可与下一层的 reduce-scatter 合并 |
 
 最后一行是个实用的优化点：如果紧接着有 TP 的 all-reduce（FFN 输出要按 TP 归约），那么 combine 的 all-to-all 和它方向一致，可以合并成一次通信，省一趟。反之如果分开做，就是两次全量往返。
 
-## 6. EPLB：训练靠 loss，推理靠搬运
+## 6. 融合：把五步焊进一个内核——MegaMoE 与波次流水
 
-### 6.1 为什么推理侧没有 loss 可用
+前五节把五个组件拆开讲，是因为它们的语义不同。但**在 GPU 上，语义的边界本身就是浪费的来源**：每一步之间要落一次 kernel 边界，中间张量要写进 HBM 再读回来。尤其 SwiGLU——一次逐元素乘，算力几乎闲着，却要把整块激活写出去再读进来。
+
+DeepSeek 在 2026 年 4 月开源进 DeepGEMM 的 **MegaMoE**（后续版本称 MegaMoE²）做的就是把这五步合并成**一次 kernel 调用**：dispatch → Linear-1 → SwiGLU → Linear-2 → combine 全程不落 HBM，中间张量只活在 GPU 的 scratch buffer 里。
+
+先钉一个位置：**MegaMoE 不是模型结构，是执行结构。** 它不改变"哪些 token 去哪个专家"（那是路由的事），只改变"这些专家在 GPU 上怎么跑"。所以它和 MoE 不是替代关系，是层次关系。
+
+### 6.1 融合消掉的是三类代价，不是一次 launch
+
+| 代价 | 朴素实现要付什么 | 融合后 |
+|---|---|---|
+| CPU 侧 launch 与同步 | E 个专家 × 5 段，每段一次 launch + 一次同步 | 1 次 |
+| 中间张量落 HBM | 分组后的 token buffer、SwiGLU 的中间激活，写出去再读回来 | 只在 scratch buffer，不落 HBM |
+| GPU↔CPU 往返 | 每段结束都要回 CPU 确认再发下一条 | 全程在 GPU 上推进 |
+
+第三行是最关键的。传统实现里 kernel 由 CPU 发起，专家一多，**launch 开销和同步等待本身就能吃掉可观的时间片**——这也是 §4.1 表格里"把 E 次启动变成 1 次"为什么在系统层比在算法层更重要。
+
+站内 `aihot-20260821` 记过 SM100 上的 persistent 形态，正好是这个结论的佐证：shared 的 L1 段、routed 的 dispatch + MMA、shared 的 L2 段、FP32 累加全部在**一个 persistent 内核**里调度，**最终只写一次 BF16 输出**。注意这里连 shared expert 和 routed expert 都一起融合了——融合的边界不是"一个 MoE 层"，而是"一次 FFN 的全部工作"。
+
+### 6.2 波次调度：重排时间，不加带宽
+
+融合只是把缝隙焊掉了，真正的提速来自第二件事：**既然 dispatch / compute / combine 已经在同一个 kernel 里，就可以把专家拆成波（wave），让不同波处于不同阶段。**
+
+DeepSeek-V4 技术报告的说法是：把专家切成若干波，每波只含一小部分专家；**某一波的 token 通信一旦全部到位，这一波的计算立刻开始，不用等其他波**。稳态下三件事同时进行——当前波在算、下一波在传、已完成的波在回传。
+
+<div class="fig">
+<svg viewBox="0 0 680 322" width="100%" font-size="13" font-weight="400" role="img" aria-label="朴素 MoE 与 MegaMoE 的执行时间轴对比">
+<title>图 4：五个算子串行 vs 焊进一个内核后的波次流水</title>
+
+<text x="40" y="24" font-size="11" fill="#b91c1c" font-weight="600">朴素：五段串行，红缝是 kernel 边界 + 同步</text>
+
+<rect x="44" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="90" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">EP 派发</text>
+<rect x="161" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="207" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">Linear-1</text>
+<rect x="278" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="324" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">SwiGLU</text>
+<rect x="395" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="441" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">Linear-2</text>
+<rect x="512" y="38" width="92" height="32" rx="4" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+<text x="558" y="58" font-size="10" fill="#1a1a1a" text-anchor="middle">EP 合并</text>
+
+<rect x="142" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="259" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="376" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<rect x="493" y="43" width="13" height="22" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+
+<text x="40" y="88" font-size="10" fill="#6b7280">红缝 = 通信没落地不能开算，算完还要再落一次 CPU</text>
+
+<text x="40" y="118" font-size="11" fill="#047857" font-weight="600">MegaMoE：单内核 + 波次流水，稳态下三件事同时跑</text>
+
+<rect x="36" y="130" width="608" height="132" rx="6" fill="#f6f8fa" stroke="#6b7280" stroke-width="0.5"/>
+
+<line x1="310" y1="142" x2="310" y2="250" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3 3"/>
+<line x1="384" y1="142" x2="384" y2="250" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3 3"/>
+
+<text x="48" y="164" font-size="9" fill="#6b7280">第 0 波</text>
+<rect x="108" y="146" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="154" y="163" font-size="10" fill="#1d4ed8" text-anchor="middle">传输</text>
+<rect x="200" y="146" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="255" y="163" font-size="10" fill="#047857" text-anchor="middle">计算</text>
+<rect x="310" y="146" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="356" y="163" font-size="10" fill="#1d4ed8" text-anchor="middle">回传</text>
+
+<text x="48" y="200" font-size="9" fill="#6b7280">第 1 波</text>
+<rect x="200" y="182" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="246" y="199" font-size="10" fill="#1d4ed8" text-anchor="middle">传输</text>
+<rect x="292" y="182" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="347" y="199" font-size="10" fill="#047857" text-anchor="middle">计算</text>
+<rect x="402" y="182" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="448" y="199" font-size="10" fill="#1d4ed8" text-anchor="middle">回传</text>
+
+<text x="48" y="236" font-size="9" fill="#6b7280">第 2 波</text>
+<rect x="292" y="218" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="338" y="235" font-size="10" fill="#1d4ed8" text-anchor="middle">传输</text>
+<rect x="384" y="218" width="110" height="26" rx="3" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="439" y="235" font-size="10" fill="#047857" text-anchor="middle">计算</text>
+<rect x="494" y="218" width="92" height="26" rx="3" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="540" y="235" font-size="10" fill="#1d4ed8" text-anchor="middle">回传</text>
+
+<text x="347" y="280" font-size="10" fill="#1a1a1a" text-anchor="middle">虚线区间内：第 0 波在回传、第 1 波在计算、第 2 波在传输</text>
+
+<rect x="60" y="296" width="14" height="10" rx="2" fill="#eff6ff" stroke="#2563eb" stroke-width="0.5"/>
+<text x="82" y="305" font-size="10" fill="#6b7280">通信（token 收发）</text>
+<rect x="250" y="296" width="14" height="10" rx="2" fill="#ecfdf5" stroke="#10b981" stroke-width="0.5"/>
+<text x="272" y="305" font-size="10" fill="#6b7280">专家计算</text>
+<rect x="420" y="296" width="14" height="10" rx="2" fill="#fca5a5" stroke="#ef4444" stroke-width="0.5"/>
+<text x="442" y="305" font-size="10" fill="#6b7280">同步缝隙（已焊掉）</text>
+</svg>
+</div>
+
+波次怎么切是个真实的取舍：**波太小**，每波通信的固定开销摊不薄，反而更慢；**波太大**，退化成整批同步，等于没切。所以它的调参逻辑和 §3.2 的 normal / low-latency 是同一套——**看你的瓶颈是带宽还是延迟**。
+
+这里必须说清一件事，否则很容易得出错误结论：**波次调度改变的是时间安排，不是通信量。** 该发的 token 一个都没少发，`O(N·k·h)` 的流量原封不动。它把"等待"变成了"并行"，但没有把"多"变成"少"。
+
+### 6.3 重叠有硬条件：那条 6144 的线
+
+如果通信本身就比计算贵，再怎么切波也藏不住。所以"能不能重叠"不是工程问题，是**一条可以事先算出来的不等式**。
+
+一个 token-expert 对，按 SwiGLU 的三个投影（gate / up / down）每个 `2hd` 算：
+
+- **计算量** `C = 6hd` FLOPs
+- **通信量** `B = h + 2h = 3h` 字节（dispatch 走 FP8 传 `h`，combine 走 BF16 传 `2h`）
+
+要计算时间 ≥ 通信时间，即 `C/B ≤ V_comp / V_comm`，两边一比 `h` 直接约掉：
+
+```text
+C / B = 6hd / 3h = 2d        单位：FLOPs / Byte
+```
+
+DeepSeek-V4-Pro 取 `d = 3072`，阈值就是 **6144 FLOPs/Byte**。
+
+这条线的意义在于它是**硬件协同设计的判据，不是某一家的 trick**：芯片的算力/带宽比低于这条线，任何调度器都救不了你；高于这条线，重叠才有净收益。这也解释了为什么它能在 NVIDIA GPU 和昇腾 NPU 上同时验证——判据是可移植的。
+
+| 口径 | 结论 |
+|---|---|
+| `d` 更大（专家更宽） | 阈值抬高，更容易藏住通信 |
+| `d` 更小（专家更窄，如 3072 个窄专家的设计） | 阈值下降，窄专家天然更难重叠——**所以窄专家的瓶颈在单卡调度开销，不在跨卡带宽** |
+| 带宽翻倍 | 阈值等效翻倍，但通信量不变 |
+| 通信量本身变大（如 BF16 dispatch） | `B` 涨到 `4h`，阈值降到 `1.5d`，直接掉三分之一 |
+
+### 6.4 边界：它不解决什么
+
+三条必须记住的限制，否则会把它当成万能药：
+
+1. **只做前向。** DeepGEMM 里的 MegaMoE 是 inference 导向的，训练要反向传播就得自己补重叠的反向路径（Prime Intellect 那版补上了，报的是 kernel 层 3.11×、端到端训练 1.34×——注意这两个数字差三倍，说明端到端瓶颈不在这个 kernel 上）。
+2. **受功率预算约束。** 把通信压到计算底下，意味着算力单元几乎持续满载，**功耗墙可能比带宽墙先到**。所以波切得越细不一定越好。
+3. **不改路由偏斜，也不改通信量。** 某个专家被 40% 的 token 命中，融合和波次都无能为力——那是 §7 EPLB 的地盘。**它优化的是"等待"，不是"工作量"，**和 §10 误判二是同一个道理。
+
+### 6.5 别和 MagiMoE 搞混
+
+两个名字差一个字母，解决的不是同一类问题：
+
+| | **MegaMoE**（DeepSeek / DeepGEMM） | **MagiMoE**（Sand.ai / MAGI-2） |
+|---|---|---|
+| 场景 | **跨卡 EP**，专家散在多张卡上 | **单卡内**大量窄专家（如 3072 个） |
+| 主要瓶颈 | 跨卡通信与计算的时序重叠 | 逐 expert 循环的 launch 与 padding 浪费 |
+| 手段 | 五步融合成单内核 + 波次调度 | routing + Top-K + 紧凑排布 + 分组 FFN + SwiGLU + combine 融合 |
+| 通信观 | 靠**时间重排**去藏 | 靠**结构解耦**去减（固定顺序交换在前，`O(N·H)` 与 top-k 无关） |
+
+最后一行是关键的认知差别：**MegaMoE 承认通信量在那里，然后想办法把它藏起来；MAGI-2 的 Multi-Head Latent MoE 是先把通信量和路由解耦，让它根本不随 top-k 涨。** 一个是工程题，一个是结构题——两者可以叠加，但别拿来互相替代。
+
+## 7. EPLB：训练靠 loss，推理靠搬运
+
+### 7.1 为什么推理侧没有 loss 可用
 
 训练 MoE 时有 auxiliary loss 或 bias 项，在梯度里直接把路由往均衡方向推。**推理时没有梯度、没有 loss、不能改模型**——路由是权重算出来的既定结果，热点专家就是热点专家。
 
@@ -377,7 +521,7 @@ combine 把各专家的输出按原路发回，然后每张卡按 top-k 的 gate
 
 EPLB 走的是第 2 条。它和 aux-loss-free 偏置是两道保险，一个管训练期、一个管部署期，互补而不替代。
 
-### 6.2 moe_lb 怎么读
+### 7.2 moe_lb 怎么读
 
 先定一个指标：
 
@@ -392,11 +536,11 @@ moe_lb = 最慢 rank 的负载 / 所有 rank 的平均负载
 
 站内 `fw10` 记了 DeepInfer 的实测：Prefill 阶段 1.074 / 1.045，Decode 阶段 1.090。
 
-### 6.3 冗余复制 + minimax 贪心
+### 7.3 冗余复制 + minimax 贪心
 
 <div class="fig">
 <svg viewBox="0 0 680 330" width="100%" font-size="13" font-weight="400" role="img" aria-label="EPLB 的冗余专家复制与装箱">
-<title>图 4：热点专家复制出冗余副本，再装箱到不同卡上</title>
+<title>图 5：热点专家复制出冗余副本，再装箱到不同卡上</title>
 
 <text x="40" y="26" font-size="11" fill="#b91c1c" font-weight="600">复制之前：e7 被 40% 的 token 命中，其余专家闲着</text>
 
@@ -460,7 +604,7 @@ moe_lb = 最慢 rank 的负载 / 所有 rank 的平均负载
 
 这里有个容易搞错的点：**minimax 贪心不等于复制最热的专家。** 如果最热的那个复制一份后仍然是最热的，第二份复制的收益就很小了；反而复制第二热的专家，可能让新的最大值降得更多。所以选择依据是「复制后新的 max」而不是「当前的值」。
 
-### 6.4 重排周期为什么这么长
+### 7.4 重排周期为什么这么长
 
 搬专家是要付代价的：一个专家的权重（比如 hidden 2048 × intermediate 512 × 2 字节）是 MB 级，几百个专家重排一次是 GB 级的卡间搬运。而且搬运期间这些专家不能用，得等。
 
@@ -477,7 +621,7 @@ moe_lb = 最慢 rank 的负载 / 所有 rank 的平均负载
 - **统计窗口**：要够长才能滤掉单步抖动，但太长会跟不上真实分布变化。Prefill 100 步（每步 token 多，样本够），Decode 1000 步（每步 token 少，要多攒）。
 - **重排周期**：远大于统计窗口，因为搬运贵。1000 / 10000 这个比例说明——**统计是廉价的、搬运是昂贵的，所以要「多次观察、少次动手」**。
 
-### 6.5 那 0.0001 的扰动
+### 7.5 那 0.0001 的扰动
 
 一个值得学的工程细节：EPLB 给每个专家评分时，额外加一个极小偏移：
 
@@ -491,7 +635,7 @@ score[e] = tokens_per_expert[e] + e * 1e-4
 
 **为了确定性牺牲一点点最优性，在生产系统里比多 1% 吞吐重要得多。**
 
-### 6.6 代价：故障域和显存
+### 7.6 代价：故障域和显存
 
 EPLB 不是免费的：
 
@@ -499,7 +643,7 @@ EPLB 不是免费的：
 - **故障域**：EP64 意味着 64 张卡构成**单一通信域**，挂一张卡整实例不可用。恢复策略不是快速重启，而是重启时「从所有当前健康的 GPU 重新确定 EP size」，拿剩下的卡降级继续跑。
 - **所以 Wide-EP 的安全网是冗余容量，不是恢复速度。** 这一点在做容量规划时必须算进去。
 
-## 7. 串起来：decode 一步的时间账本
+## 8. 串起来：decode 一步的时间账本
 
 把四个组件放回同一条时间轴上，才能看清各自的权重：
 
@@ -508,7 +652,7 @@ EPLB 不是免费的：
 | Route（gate + top-k） | 本地计算 | 否 | 小但不可忽略（每步都算） |
 | Dispatch | **纯通信** | 部分（hook 可先发后等） | **高**——每步都付，纯加 TPOT |
 | Grouped GEMM | 计算 | — | 中（decode 时 M 很小，是访存受限） |
-| Combine | **纯通信** | 基本不能 | **高**——收齐才能进下一层 |
+| Combine | **纯通信** | 基本不能（**融合 + 波次后可藏，见 §6**） | **高**——收齐才能进下一层 |
 | 加权还原 | 本地计算 | 否 | 小 |
 
 两个结论：
@@ -516,7 +660,7 @@ EPLB 不是免费的：
 1. **Decode 阶段，通信占的比例远高于 Prefill。** Prefill 一次算几千个 token，Grouped GEMM 是绝对主角；Decode 一次算几百个 token，dispatch + combine 两次往返的固定延迟就变得显著。**这就是 DeepEP 要有 low-latency 模式的全部理由。**
 2. **EPLB 不在这条时间轴上。** 它作用于「很多步之间」，收益体现在**多步累计**的吞吐上，而不是单步延迟。所以：**追求 TTFT / TPOT 的调优看 dispatch 和 combine，追求集群吞吐的调优看 EPLB 和 EP size**，两组旋钮解决不同的问题，混着调会互相抵消。
 
-## 8. 参数决策表：四个旋钮怎么定
+## 9. 参数决策表：四个旋钮怎么定
 
 把本篇的结论压成一张可查的表：
 
@@ -534,7 +678,7 @@ EPLB 不是免费的：
 
 **Wide-EP 买的不是峰值，是高交互性区间的纵深。** 这句话在容量规划时最容易被忽略——如果你算的是"满 batch 吞吐"，会得出"EP 开大没用"的错误结论。
 
-## 9. 三个常见误判
+## 10. 三个常见误判
 
 **误判一：以为 Grouped GEMM 只是省 kernel launch。**
 省 launch 是顺带的。真正的收益是把 E 个独立的尾部效应摊成 1 个——在专家数上百、每个专家 token 数很少的场景下，后者比前者大一个量级。反过来说，**如果你的专家数很少（比如 8 个）而且每个都吃得很满，Grouped GEMM 的收益很有限**，别指望它能救你。
@@ -545,7 +689,7 @@ EPLB 改的是**专家的物理分布**，不改路由结果。如果某个专�
 **误判三：以为 dispatch 的瓶颈是带宽。**
 Prefill 阶段确实是带宽（数据量大），但 **Decode 阶段瓶颈是延迟**——每步通信量小到带宽根本用不满，真正吃时间的是那次往返的固定开销和同步点。所以在 Decode 上调 dispatch，优化方向是**降低延迟和占用**（固定 buffer、少 SM、hook 重叠），不是提高带宽利用率。
 
-## 10. 与站内文章的衔接
+## 11. 与站内文章的衔接
 
 - **`sys8`（并行切分策略全景）** 把 EP 放在五把刀里给了定性描述——"all-to-all，通信量随 top-k 和 batch 变化，需要专家负载均衡"。本篇就是把这三句话各自展开成机制：all-to-all 为什么要变长、通信量怎么变、均衡怎么做；
 - **`sys12`（Mooncake）** 讲的是请求级的路由与 KV 搬运（跨实例），本篇讲的是**层内的 token 级路由**——两个不同粒度的"分发"，别混；
@@ -554,6 +698,7 @@ Prefill 阶段确实是带宽（数据量大），但 **Decode 阶段瓶颈是�
 - **`op1`（MLA 算子）** 是单卡算子视角，本篇是跨卡数据流视角。MLA 压缩的是 KV，Grouped GEMM 优化的是专家计算——两者都是"让每步读写的数据变少"，但一个在注意力、一个在 FFN；
 - **`fa4`（DeepSeek V4）/ `fa10`（MiniMax M3.1 Flash）** 讲了模型的专家数与稀疏度（384 专家 / top-8 这类配置）。**模型侧的专家数直接决定了 EP 的通信复杂度**——专家越多，单卡摊到的越少，dispatch 的目的地越分散。这篇的系统视角和它们的模型视角是一枚硬币的两面；
 - **`aihot-20260925`（MegaBlocks 与 grouped GEMM）** 是本站唯一提到 grouped GEMM 的地方，一句话带过。本篇补上了它为什么重要、接口长什么样、和 capacity factor 的关系。
+- **`aihot-20260821`（DeepGEMM SM100 MegaMoE 内核）/ `fa4`（DeepSeek V4）** 都只给了 MegaMoE 的结论（前者记了 persistent 内核的融合形态，后者记了 1.5–1.73× 的提速）。**本篇 §6 是站内第一次把它拆开讲**：融合消掉哪三类代价、波次为什么能重叠、6144 FLOPs/Byte 这条阈值怎么推出来、以及它和 MagiMoE 不是一回事。
 
 ---
 
@@ -572,3 +717,4 @@ Prefill 阶段确实是带宽（数据量大），但 **Decode 阶段瓶颈是�
 - [（十）DeepInfer 深度解析](/blog/fw10-deepinfer)——Wide-EP 配比与 EPLB 实测数据的来源
 - [（七）CUDA Graph](/blog/fw7-cuda-graph)——另一个同名 dispatcher 的出处
 - [（一）MLA 算子](/blog/op1-mla-operator)——单卡算子视角的对照
+- [（四）DeepSeek V4 架构](/blog/fa4-deepseek-v4)——MegaMoE 首次出现在模型侧的位置

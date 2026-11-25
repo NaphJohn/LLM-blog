@@ -47,7 +47,7 @@ layout: ../../layouts/BlogPost.astro
 - **Muon 优化器**替代 AdamW：对正交/矩矩阵用 Muon（动量 + 正交化），更省显存、收敛更稳，是 V4 训练降本的关键。
 - **OPD（On-Policy Distillation，同策略蒸馏）**：用主模型在线蒸馏"领域专家"小模型，把专项能力压缩进统一模型，避免离线蒸馏的分布偏移。
 - **FP8 训练 / FP4 专家参数**：MoE 专家权重用 FP4，进一步压训练/存储成本。
-- **MegaMoE EP 通信**：专家并行通信优化，提速 1.5–1.73×；另有**磁盘 KV Cache**、TileLang DSL、昇腾 NPU 适配。
+- **MegaMoE EP 通信**：专家并行通信优化，提速 1.5–1.73×（**为什么快、波次调度与 6144 FLOPs/Byte 阈值，见 `sys13` §6**）；另有**磁盘 KV Cache**、TileLang DSL、昇腾 NPU 适配。
 
 ## 3. 两个版本与定价
 
