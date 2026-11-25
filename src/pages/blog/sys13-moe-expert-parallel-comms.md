@@ -15,7 +15,9 @@ MoE 推理的一条数据流是固定的：**路由决定 token 去哪 → dispa
 
 这四个组件经常被单独介绍，但它们的价值只有连起来看才成立：**dispatch 和 combine 决定了单步延迟的下限，Grouped GEMM 决定了这批 token 的算力利用率，EPLB 决定了跑几万步之后这条流水会不会歪掉**。单看任何一个都会得出错误结论——比如以为 Grouped GEMM 只是"省 kernel launch"，或者以为 EPLB 是可有可无的运维工具。
 
-本篇不讲 kernel 内部（TMA、warp specialization、swizzle 那些留给专门的文章），只讲**系统层语义**：每一段在解决什么问题、代价记在谁头上、参数怎么定。
+还有一个层面不在这四个组件里，却决定了它们串起来之后**还剩多少缝隙**：这几个算子能不能焊进同一个内核、并按波次错开跑（§6）。它不改变上面任何一段的语义，只改变它们在时间轴上的相对位置。
+
+本篇不深入 kernel 内部（TMA、warp specialization、swizzle 那些留给专门的文章），只讲**系统层语义**：每一段在解决什么问题、代价记在谁头上、参数怎么定。**唯一的例外是 §6**——那里会碰到融合的边界划在哪，但只谈「融掉了哪几类代价」，不展开实现。
 
 ## 1. 先把三个词钉在正确的位置
 
@@ -93,7 +95,7 @@ MoE 推理的一条数据流是固定的：**路由决定 token 去哪 → dispa
 五步里第一步和第五步是纯本地计算（gate 矩阵乘、按权重求和），中间三步是问题所在。两个分界点值得记住：
 
 1. **dispatch 之前，token 是「按请求排的」；dispatch 之后，token 是「按专家排的」。** 这个重排不是附带效果，而是 Grouped GEMM 能成立的前提。
-2. **combine 之后必须把所有分片收齐才能进下一层。** 所以 combine 是纯暴露的延迟，没有任何可以藏在后面的计算（除非把下一层的非依赖部分提前）。
+2. **combine 之后必须把所有分片收齐才能进下一层。** 所以 combine 是纯暴露的延迟，没有任何可以藏在后面的计算（除非把下一层的非依赖部分提前，或者像 §6 那样把整条流水焊进一个内核、靠波次错开）。
 
 ## 3. Dispatch：难点不是"发出去"，是"变长"
 
@@ -360,7 +362,7 @@ combine 把各专家的输出按原路发回，然后每张卡按 top-k 的 gate
 | 时机 | Grouped GEMM **之前** | Grouped GEMM **之后** |
 | 权重用在哪 | 不用（路由结果只决定地址） | **必须用**（Σ gateᵢ·yᵢ） |
 | 能否被掩盖 | 可以（先发，等需要用之前再等） | **基本不能**——收齐才能进下一层 |
-| 融合后能否丢进同一个内核 | 可以（与 dispatch 一起融合） | 可以——这正是 §6 的前提 |
+| 融合后能否丢进同一个内核 | 可以（与 combine 一起融合） | 可以——这正是 §6 的前提 |
 | 能否合并 | — | 可与下一层的 reduce-scatter 合并 |
 
 最后一行是个实用的优化点：如果紧接着有 TP 的 all-reduce（FFN 输出要按 TP 归约），那么 combine 的 all-to-all 和它方向一致，可以合并成一次通信，省一趟。反之如果分开做，就是两次全量往返。
@@ -381,7 +383,7 @@ DeepSeek 在 2026 年 4 月开源进 DeepGEMM 的 **MegaMoE**（后续版本称 
 | 中间张量落 HBM | 分组后的 token buffer、SwiGLU 的中间激活，写出去再读回来 | 只在 scratch buffer，不落 HBM |
 | GPU↔CPU 往返 | 每段结束都要回 CPU 确认再发下一条 | 全程在 GPU 上推进 |
 
-第三行是最关键的。传统实现里 kernel 由 CPU 发起，专家一多，**launch 开销和同步等待本身就能吃掉可观的时间片**——这也是 §4.1 表格里"把 E 次启动变成 1 次"为什么在系统层比在算法层更重要。
+第三行是最关键的。传统实现里 kernel 由 CPU 发起，专家一多，**launch 开销和同步等待本身就能吃掉可观的时间片**——这也是 §4 标题里那句"把 E 次启动变成 1 次"为什么在系统层比在算法层更重要。
 
 站内 `aihot-20260821` 记过 SM100 上的 persistent 形态，正好是这个结论的佐证：shared 的 L1 段、routed 的 dispatch + MMA、shared 的 L2 段、FP32 累加全部在**一个 persistent 内核**里调度，**最终只写一次 BF16 输出**。注意这里连 shared expert 和 routed expert 都一起融合了——融合的边界不是"一个 MoE 层"，而是"一次 FFN 的全部工作"。
 
@@ -694,7 +696,7 @@ Prefill 阶段确实是带宽（数据量大），但 **Decode 阶段瓶颈是�
 - **`fw7`（CUDA Graph）** 里的 dispatcher 是图模式分发器，与本篇的 token dispatcher 同名不同物。但两者有一个真实交点：**low-latency kernel 的固定 buffer 设计，正是为了让 MoE decode 能进图**（`aihot-20260912` 记的 DeepEP v2 ElasticBuffer 就是干这个）；
 - **`op1`（MLA 算子）** 是单卡算子视角，本篇是跨卡数据流视角。MLA 压缩的是 KV，Grouped GEMM 优化的是专家计算——两者都是"让每步读写的数据变少"，但一个在注意力、一个在 FFN；
 - **`fa4`（DeepSeek V4）/ `fa10`（MiniMax M3.1 Flash）** 讲了模型的专家数与稀疏度（384 专家 / top-8 这类配置）。**模型侧的专家数直接决定了 EP 的通信复杂度**——专家越多，单卡摊到的越少，dispatch 的目的地越分散。这篇的系统视角和它们的模型视角是一枚硬币的两面；
-- **`aihot-20260925`（MegaBlocks 与 grouped GEMM）** 是本站唯一提到 grouped GEMM 的地方，一句话带过。本篇补上了它为什么重要、接口长什么样、和 capacity factor 的关系。
+- **`aihot-20260925`（MegaBlocks 与 grouped GEMM）** 此前只是把 grouped GEMM 一句话带过（`sys14` 里也出现过一次）。本篇补上了它为什么重要、接口长什么样、和 capacity factor 的关系；
 - **`aihot-20260821`（DeepGEMM SM100 MegaMoE 内核）/ `fa4`（DeepSeek V4）** 都只给了 MegaMoE 的结论（前者记了 persistent 内核的融合形态，后者记了 1.5–1.73× 的提速）。**本篇 §6 是站内第一次把它拆开讲**：融合消掉哪三类代价、波次为什么能重叠、6144 FLOPs/Byte 这条阈值怎么推出来、以及它和 MagiMoE 不是一回事。
 
 ---

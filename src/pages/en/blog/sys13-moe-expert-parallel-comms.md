@@ -15,7 +15,9 @@ A MoE forward pass follows a fixed data flow: **route decides where tokens go, d
 
 These four components are usually introduced one at a time, but their value only appears when you look at them together: **dispatch and combine set the floor on per-step latency, Grouped GEMM decides how much compute that batch actually uses, and EPLB decides whether the pipeline drifts after tens of thousands of steps**. Study any one in isolation and you reach the wrong conclusion — for instance that Grouped GEMM is just a way to save kernel launches, or that EPLB is optional operations tooling.
 
-This post stays out of kernel internals (TMA, warp specialization, swizzling belong in a dedicated article) and covers the **systems-level semantics** instead: what each stage solves, whose latency budget pays for it, and how to pick the parameters.
+One layer sits outside these four components yet decides how much seam is left once they are strung together: **whether these operators can be welded into a single kernel and staggered into waves** (section 6). It changes none of the semantics above, only their relative positions on the timeline.
+
+This post stays out of kernel internals (TMA, warp specialization, swizzling belong in a dedicated article) and covers the **systems-level semantics** instead: what each stage solves, whose latency budget pays for it, and how to pick the parameters. **Section 6 is the one exception**: it touches where the fusion boundary sits, but only in terms of which costs disappear, never how the kernel is written.
 
 ## 1. Putting three terms in the right place
 
@@ -93,7 +95,7 @@ Same name, unrelated mechanisms, and the only thing they share is the word. Do n
 Steps one and five are pure local compute (the gate matmul and the weighted sum). Steps two through four are where the problems live. Two boundaries are worth remembering:
 
 1. **Before dispatch, tokens are ordered by request; after dispatch, they are ordered by expert.** That reordering is not a side effect, it is the precondition for Grouped GEMM to work at all.
-2. **After combine you must have every shard before entering the next layer.** So combine is exposed latency with no compute left to hide it behind (unless you can hoist independent work from the next layer).
+2. **After combine you must have every shard before entering the next layer.** So combine is exposed latency with no compute left to hide it behind (unless you can hoist independent work from the next layer, or, as in section 6, weld the whole pipeline into one kernel and stagger it into waves).
 
 ## 3. Dispatch: the hard part is variable length, not getting data out
 
@@ -360,8 +362,8 @@ Combine sends expert outputs back along the reverse path, then each GPU performs
 | Position | **before** Grouped GEMM | **after** Grouped GEMM |
 | Where weights apply | Nowhere (routing only picks addresses) | **Mandatory** (sum gate_i * y_i) |
 | Hideable | Yes (send early, wait when needed) | **Mostly not**: must be complete before the next layer |
+| Fusable into one kernel | Yes (fuses with combine) | Yes, and this is exactly the premise of section 6 |
 | Fusable | - | Can fuse with the next layer reduce-scatter |
-| Fusable into one kernel | Yes (fuses with dispatch) | Yes, and this is exactly the premise of section 6 |
 
 That last row is a practical optimization. If a TP all-reduce follows (the FFN output must be reduced across TP), the combine all-to-all runs in the same direction and the two can fuse into one collective, saving a round trip. Done separately, it is two full round trips.
 
@@ -381,7 +383,7 @@ Pin the scope first: **MegaMoE is an execution structure, not a model structure.
 | Intermediate tensors to HBM | Packed token buffer and the SwiGLU activation, written out and read back | Scratch buffer only, never HBM |
 | GPU-to-CPU round trips | Every segment returns to the CPU before the next is issued | Driven entirely on the GPU |
 
-The third row matters most. In a conventional implementation the CPU issues every kernel, so once the expert count grows, **launch overhead and synchronization latency alone eat a visible slice of the timeline**. That is why section 4.1's claim about turning E launches into 1 matters more at the systems layer than at the algorithms layer.
+The third row matters most. In a conventional implementation the CPU issues every kernel, so once the expert count grows, **launch overhead and synchronization latency alone eat a visible slice of the timeline**. That is why the headline claim of section 4, turning E launches into 1, matters more at the systems layer than at the algorithms layer.
 
 The site's `aihot-20260821` records the persistent form on SM100 and corroborates exactly this: the shared L1 segment, the routed dispatch plus MMA, the shared L2 segment and the FP32 accumulation are all scheduled **inside one persistent kernel**, **writing the BF16 output exactly once**. Note that shared experts and routed experts fuse together there too, so the fusion boundary is not one MoE layer but the entire FFN's work.
 
@@ -692,7 +694,7 @@ In prefill that is true, since the payload is large. **In decode the bottleneck 
 - **`fw7` (CUDA Graph)** uses dispatcher for the graph-mode selector, a different thing from the token dispatcher here. But the two genuinely intersect: **the low-latency kernel fixed-buffer design exists precisely so MoE decode can enter a graph**, which is what DeepEP v2 ElasticBuffer accomplished per `aihot-20260912`.
 - **`op1` (MLA operator)** takes the single-GPU operator view while this post takes the cross-GPU data flow view. MLA compresses KV; Grouped GEMM optimizes expert compute. Both aim to read and write less data per step, one in attention and one in the FFN.
 - **`fa4` (DeepSeek V4) and `fa10` (MiniMax M3.1 Flash)** describe expert counts and sparsity (configurations such as 384 experts with top-8). **The model expert count directly sets EP communication complexity:** more experts means fewer per GPU and more scattered dispatch destinations. Their model view and this systems view are two sides of one coin.
-- **`aihot-20260925` (MegaBlocks and grouped GEMM)** is the only other place on this site mentioning grouped GEMM, and only in passing. This post covers why it matters, what the interface looks like, and how it relates to capacity factor.
+- **`aihot-20260925` (MegaBlocks and grouped GEMM)** mentions grouped GEMM only in passing, as does `sys14`. This post covers why it matters, what the interface looks like, and how it relates to capacity factor.
 - **`aihot-20260821` (the DeepGEMM SM100 MegaMoE kernel) and `fa4` (DeepSeek V4)** only report MegaMoE conclusions, one recording the persistent fused kernel shape and the other the 1.5 to 1.73x speedup. **Section 6 here is the first place on this site that opens it up**: which three classes of cost fusion removes, why waves can overlap, how the 6144 FLOPs/Byte threshold is derived, and why it is not the same thing as MagiMoE.
 
 ---
