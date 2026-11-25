@@ -96,7 +96,7 @@ layout: ../../layouts/BlogPost.astro
 
 发布后两天就出补丁，因为发现了一个**静默正确性 bug**：
 
-- **#48330 混合 dtype 量化融合守卫**：FlashInfer 的 `allreduce + RMSNorm + static-quant` 三合一融合核，在激活为 BF16、RMSNorm 权重为 FP32 时 dtype 不一致，把 4-bit NVFP4 读成了错误位模式 → 隐状态损坏 → 输出退化成重复的 `!!!!!`。修复加 dtype 匹配守卫：不一致走安全路径，一致时保留融合。
+- **#48330 混合 dtype 量化融合守卫**：NVFP4 模型静默输出乱码（反复的 `!!!!!`）。根因是 FlashInfer 的三合一融合核在 BF16 激活 + FP32 RMSNorm 权重下 dtype 不匹配，把 4-bit 权重读成了错误位模式。机制与修复思路见 [（二）vLLM 原理与结构](./fw2-vllm-internals)。
 - **#47888**：TorchCodec 缺 FFmpeg 时不再阻塞启动。
 
 <div class="warnbox">

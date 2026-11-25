@@ -669,10 +669,7 @@ Two conclusions:
 | **Redundant experts** | Saves memory | Survives hot spots | **Look at routing skew.** Measure `moe_lb` first; above 1.15 you should add |
 | **Rebalance period** | Tracks fast, expensive moves | Stable, lags drift | **Look at traffic volatility.** Steady traffic allows longer periods; strong diurnal or event peaks argue for shorter |
 
-On the first row, the numbers from `fw10` bear repeating (64xSM100, fixed three draft tokens, discounted at a 75 percent per-token acceptance rate):
-
-- At 100 tok/s per user, EP64 delivers about 26.6k tok/s/GPU and EP8 about 25k: **nearly identical peaks**.
-- At 250 tok/s per user, EP64 still holds about 15.5k while EP8 falls to about 1.7k.
+On the first row, `fw10` has a Wide-EP measurement (64xSM100, fixed three draft tokens, discounted at a 75 percent per-token acceptance rate) whose conclusion is counterintuitive: **at the low-interactivity end (100 tok/s per user) EP64 and EP8 peak almost identically; push interactivity to 250 tok/s per user and EP8 falls to roughly one tenth of EP64.** The numbers live in [(10) DeepInfer dissected](./fw10-deepinfer), in the Wide-EP section.
 
 **Wide-EP buys depth in the interactive regime, not peak throughput.** This is the easiest thing to miss in capacity planning: compute only "throughput at full batch" and you will conclude, wrongly, that a larger EP does not help.
 

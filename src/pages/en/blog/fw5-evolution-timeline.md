@@ -96,7 +96,7 @@ Also in tow: unified streaming-parse engine (#46610), native DSpark speculative 
 
 Two days after release came a patch, because a **silent correctness bug** was found:
 
-- **#48330 mixed-dtype quant fusion guard**: FlashInfer's `allreduce + RMSNorm + static-quant` fused kernel, when the activation is BF16 and the RMSNorm weight is FP32, hits a dtype mismatch that reads 4-bit NVFP4 with the wrong bit pattern → corrupts hidden states → output degrades into repeated `!!!!!`. The fix adds a dtype-match guard: mismatched takes the safe path, matched keeps the fusion.
+- **#48330 mixed-dtype quant fusion guard**: NVFP4 models silently emit garbage (repeated `!!!!!`). The root cause is a dtype mismatch in FlashInfer's three-way fused kernel under BF16 activations with FP32 RMSNorm weights, which reads the 4-bit weights with the wrong bit pattern. Mechanism and fix in [(2) vLLM internals and structure](./fw2-vllm-internals).
 - **#47888**: TorchCodec no longer blocks startup when FFmpeg is missing.
 
 <div class="warnbox">
