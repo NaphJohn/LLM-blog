@@ -19,6 +19,7 @@ const mm = [
   { href: base + 'blog/mm3-generation', title: '（三）生成模型：扩散与对抗（Stable Diffusion & GAN）', date: '2026-07-31' },
   { href: base + 'blog/mm4-vla-world-model', title: '（四）从 VLA 到世界模型：RT-2 → π0.7 → HiF-VLA', date: '2026-07-31' },
   { href: base + 'blog/mm5-efficiency-frontier', title: '（五）高效系统与前沿推理：注意力 / 推理优化 / 端侧 / RL', date: '2026-07-31' },
+  { href: base + 'blog/mm6-video-gen-architecture', title: '（六）视频生成的架构分野：MAGI-2 的统一单流 vs Seedance 2.5 的双分支', date: '2026-11-25' },
 ];
 const fw = [
   { href: base + 'blog/fw1-why-inference-engine', title: '（一）为什么需要推理引擎：朴素推理的三道墙', date: '2026-08-01' },
@@ -341,7 +342,7 @@ const totalBi = totalAll - aihot.length;
       </ul>
 
       <h2 id="s-mm">多模态解码手记</h2>
-      <p class="series-tag">系列 · 共 5 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
+      <p class="series-tag">系列 · 共 6 篇，循序渐进：从基础与对齐范式 → 视觉语言模型（VLM）演进 → 生成模型（扩散/GAN）→ 视觉-语言-动作（VLA）与世界模型 → 高效系统与前沿推理 → 视频生成的架构分野（单流 vs 双分支）。把多模态常用的模型、结构、原理与优化手段串成一条学习主线，每篇附英文对照。</p>
       <ul class="post-list">
         {mm.map((p) => (
           <li><a href={p.href}>{p.title}</a><div class="date">{p.date}</div></li>
