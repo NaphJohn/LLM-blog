@@ -11,7 +11,7 @@ layout: ../../layouts/BlogPost.astro
 
 > 一句话主线：**MTP 让模型在训练期学会"一次 forward 多预测几个 token"；EAGLE-3 用专门训练的 Draft Head 自回归地猜；DFlash 一口气并行猜一整块；DSpark = DFlash 并行 backbone + 轻量 Markov Head + Confidence Head + 负载感知调度。** 三者都是"自草稿、不养独立小 LM"，只是草稿拓扑不同。
 
-先纠正一个最容易混淆的点：**DSpark 不是 MTP，也不是简单地"一个 Draft 模型自回归生成多个 token"**。DSpark 的 Draft 核心是「DFlash 的 block-parallel backbone + 轻量 Markov Head」，再加一个 Confidence Head——即"并行生成 + 轻量序列依赖 + 置信度调度"。官方论文与 vLLM Speculators 文档都是这么描述的。下面把这整条链路拆开讲。
+三条路线最容易混的地方先说清：**DSpark 不是 MTP，也不是"一个 Draft 模型自回归地吐多个 token"**——它拿 DFlash 的 block-parallel backbone 当主干，挂一个轻量 Markov Head 补序列依赖，再用 Confidence Head 决定每次并行猜多长。完整的机制拆解在 [Ep4：DSpark 深度解析](../ep4-dspark)，本篇只用它的**草稿拓扑**去和另外两条对齐。
 
 ## 一、MTP Head 到底是什么
 

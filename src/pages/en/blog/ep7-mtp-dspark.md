@@ -11,7 +11,7 @@ layout: ../../../layouts/BlogPost.astro
 
 > The main thread in one line: **MTP teaches the model during training to predict several tokens in one forward pass; EAGLE-3 guesses autoregressively with a specially trained Draft Head; DFlash guesses a whole block in parallel in one shot; DSpark = DFlash parallel backbone + lightweight Markov Head + Confidence Head + load-aware scheduling.** All three are "self-drafting, no separate small LM," they just differ in draft topology.
 
-First, correcting the most easily confused point: **DSpark is not MTP, and it is not simply "one draft model generating multiple tokens autoregressively."** The drafting core of DSpark is "DFlash's block-parallel backbone + a lightweight Markov Head," plus a Confidence Head — that is, "parallel generation + lightweight sequential dependency + confidence scheduling." Both the official paper and the vLLM Speculators documentation describe it this way. The rest of this post takes the whole chain apart.
+One distinction up front, because it is the easiest to get wrong: **DSpark is not MTP, and it is not "one draft model emitting several tokens autoregressively."** It takes the DFlash block-parallel backbone as its trunk, hangs a lightweight Markov Head off it for sequential dependency, and uses a Confidence Head to decide how far each parallel guess should run. The full mechanism is dissected in [Ep4: DSpark in depth](../ep4-dspark); this post only uses its **draft topology** to line it up against the other two.
 
 ## 1. What Exactly Is an MTP Head
 
