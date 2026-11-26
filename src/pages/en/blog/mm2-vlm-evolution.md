@@ -37,7 +37,7 @@ LLaVA proved one thing: **you do not need to train a multimodal LLM from scratch
 - **Results**: GPT-4-as-Judge relative score 85.1%, ScienceQA 92.53% SOTA.
 
 <div class="fig">
-  <img src="/llava_arch.svg" alt="LLaVA architecture: input image encoded by frozen CLIP ViT-L/14, bridged via a trainable projection to Vicuna's text-embedding space, concatenated with text tokens and autoregressively decoded by the LLM" />
+  <img src="/LLM-blog/llava_arch.svg" style="width:100%;max-width:720px;height:auto;display:block;margin:0 auto" alt="LLaVA architecture: input image encoded by frozen CLIP ViT-L/14, bridged via a trainable projection to Vicuna's text-embedding space, concatenated with text tokens and autoregressively decoded by the LLM" />
   <p class="fig-cap">Fig: The LLaVA standard paradigm — frozen vision encoder + light projection bridge + LLM fine-tuning (redrawn)</p>
 </div>
 
